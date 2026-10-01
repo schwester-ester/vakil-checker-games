@@ -1,0 +1,8 @@
+node_modules/
+*:Zone.Identifier
+.aws/
+.codex/
+.agents/
+.env
+.env.*
+!.env.example

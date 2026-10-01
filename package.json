@@ -1,0 +1,16 @@
+{
+  "name": "vakil-checker-games",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive implementation of Vakil's geometric Littlewood-Richardson checker rule.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "serve": "http-server . -c-1 -p 5173"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "typescript": "^5.9.2"
+  }
+}
