@@ -100,6 +100,16 @@ This is an increasing `k`-subset: adjacent differences are `1+beta_i-beta_(i+1) 
 
 The database for regression testing independently enumerates all pairs `(A,B)` through `n=5`, records each tableau's smallest board and every matching start and leaf on that board, and compares those complete results with the inverse search. No persistent database or network service is needed for the website.
 
+## Complete ladder diagrams
+
+For a fixed straight shape `beta` and entry bound `m`, the ladder vertices are all semistandard fillings with entries in `{1,...,m}`. An edge `T -> U` increases exactly one cell by 1 and preserves semistandardness. The diagram is a directed acyclic graph: different legal increment sequences may meet at the same filling. We retain every edge and show each filling once, instead of duplicating it along different paths in a tree.
+
+The componentwise minimum filling places `r` in every box of row `r` (rows numbered from 1). It exists iff the shape has at most `m` rows. The empty shape has one empty filling. For any nonminimal filling, choose the first cell in top-to-bottom, left-to-right order whose entry exceeds its minimum. Its left neighbor, if present, has the row's minimum, and its upper neighbor has the preceding row's minimum. Decreasing that cell by 1 preserves the weak row and strict column inequalities; the right and lower inequalities also remain true. Iterating reaches the minimum filling. Reversing those decrements proves that exploring every legal single-cell increment from the minimum reaches every valid filling.
+
+The implementation uses a breadth-first traversal, keyed by the full tableau shape and entries. Every vertex has level `sum(T[r,c] - r)`; every edge raises the level by exactly 1. All legal increments are recorded even when their destination was previously visited. A tableau-count limit rejects the whole diagram rather than silently omitting vertices or edges.
+
+Each vertex independently uses the exhaustive minimum-board inverse above. All matching checker-game paths on all minimal starting positions are shown under that tableau. The chosen game's stored Section 2.6 events supply the tableau-cell interactions, so a click always traces an actual recording move. Every matching start's full sibling tree remains available in the common checker-game explorer. Completed correspondences may be shared between identical tableaux in different comparison panels; failed or interrupted searches remain explicitly labeled.
+
 ## Regression checks
 
 The test suite verifies:

@@ -11,6 +11,170 @@ import { createTableauInput } from "./components/TableauInput.js";
 import { findMinimalTableauGames } from "./math/inverseTableau.js";
 import { createCheckerBoard } from "./components/CheckerBoard.js";
 import { formatSubset } from "./math/validation.js";
+import { generateTableauLadder, parseTableauShape } from "./math/tableauLadder.js";
+import { createLadderNodeContent, createTableauLadders } from "./components/TableauLadders.js";
+let nextShapeId = 2;
+const ladders = {
+    shapes: [{ id: 1, text: "2, 1", ladder: undefined, error: undefined, games: new Map(), selections: new Map(), scale: 0.8 }],
+    maxEntry: 3,
+    maxTableaux: 200,
+    maxBoard: 10,
+    effort: 500_000,
+    controller: undefined,
+    status: "Add shapes to compare their ladder diagrams with the same maximum entry.",
+};
+function cancelLadderAnalysis() {
+    ladders.controller?.abort();
+    ladders.controller = undefined;
+}
+function ladderStatus(text) {
+    ladders.status = text;
+    const status = document.querySelector("#ladder-status");
+    if (status !== null)
+        status.textContent = text;
+}
+async function analyzeLadders() {
+    cancelLadderAnalysis();
+    const controller = new AbortController();
+    ladders.controller = controller;
+    const searchOptions = { maxBoardSize: ladders.maxBoard, maxTotalNodes: ladders.effort, maxNodesPerTree: tableauInput.maxTreeNodes, signal: controller.signal };
+    const cache = new Map();
+    for (const shape of ladders.shapes)
+        for (const [key, result] of shape.games)
+            if (typeof result !== "string")
+                cache.set(key, result);
+    for (const shape of ladders.shapes) {
+        shape.error = undefined;
+        shape.games.clear();
+        try {
+            shape.ladder = generateTableauLadder(parseTableauShape(shape.text), ladders.maxEntry, ladders.maxTableaux);
+        }
+        catch (error) {
+            shape.ladder = undefined;
+            shape.error = error instanceof Error ? error.message : "Could not generate this shape.";
+        }
+    }
+    ladderStatus("Generating complete ladder diagrams and finding minimum-board games…");
+    render();
+    let completed = 0, failed = 0;
+    const total = ladders.shapes.reduce((sum, shape) => sum + (shape.ladder?.nodes.length ?? 0), 0);
+    try {
+        for (const shape of ladders.shapes) {
+            for (const [index, node] of (shape.ladder?.nodes ?? []).entries()) {
+                if (controller.signal.aborted)
+                    return;
+                ladderStatus(`Finding checker games: ${completed + 1} of ${total} tableaux · shape (${shape.text || "∅"})`);
+                try {
+                    const cached = cache.get(node.id);
+                    const result = (cached !== undefined && cached.n <= searchOptions.maxBoardSize ? cached : undefined) ?? await findMinimalTableauGames(node.rows, {
+                        ...searchOptions,
+                        onProgress: (n) => ladderStatus(`Finding checker games: ${completed + 1} of ${total} tableaux · shape (${shape.text || "∅"}) · board n=${n}`),
+                    });
+                    if (controller.signal.aborted)
+                        return;
+                    cache.set(node.id, result);
+                    shape.games.set(node.id, result);
+                }
+                catch (error) {
+                    if (controller.signal.aborted)
+                        return;
+                    failed++;
+                    shape.games.set(node.id, error instanceof BranchLimitError
+                        ? "Search limit reached. Raise search states or the per-game-tree limit and retry; games are not yet known."
+                        : error instanceof Error ? error.message : "Checker-game search failed.");
+                }
+                completed++;
+                const old = document.querySelector(`[data-ladder-node="${shape.id}-${index}"] .ladder-node-content`);
+                old?.replaceWith(createLadderNodeContent(shape, node, ladderOptions()));
+                // Cached searches still yield so large comparisons remain cancellable.
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+        }
+        const invalidShapes = ladders.shapes.filter((shape) => shape.error !== undefined).length;
+        ladderStatus(`Analysis complete: ${total} tableaux · ${completed - failed} with complete minimum-board games${failed ? ` · ${failed} searches need larger limits` : ""}${invalidShapes ? ` · ${invalidShapes} shapes need correction` : ""}.`);
+    }
+    finally {
+        if (ladders.controller === controller) {
+            ladders.controller = undefined;
+            render();
+        }
+    }
+}
+function openLadderGame(rows, result, matchIndex, leafId, event) {
+    cancelTableauSearch();
+    tableauInput.rows = rows.map((row) => [...row]);
+    tableauInput.shapeText = rows.map((row) => row.length).join(", ");
+    tableauInput.shapeValid = true;
+    tableauInput.error = undefined;
+    tableauInput.result = result;
+    tableauInput.match = undefined;
+    tableauInput.status = `All ${result.matches.length} minimum-board starting positions for the selected ladder tableau (n=${result.n}).`;
+    activateTableauMatch(matchIndex);
+    state.view = "flow";
+    state.playbackLeafId = leafId;
+    if (event !== undefined)
+        inspectTableauEvent(leafId, event);
+    else {
+        state.selectedNodeId = result.matches[matchIndex].tree.root.id;
+        render();
+        requestAnimationFrame(() => document.querySelector("#results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+}
+function ladderOptions() {
+    return {
+        ...ladders,
+        searching: ladders.controller !== undefined,
+        onAdd: () => {
+            cancelLadderAnalysis();
+            ladders.shapes.push({ id: nextShapeId++, text: "2", ladder: undefined, error: undefined, games: new Map(), selections: new Map(), scale: 0.8 });
+            ladderStatus("Shape added. Generate to include it in the comparison.");
+            render();
+        },
+        onRemove: (id) => {
+            cancelLadderAnalysis();
+            ladders.shapes = ladders.shapes.filter((shape) => shape.id !== id);
+            ladderStatus("Shape removed. Completed diagrams for the other shapes are retained.");
+            render();
+        },
+        onShape: (id, text) => {
+            const shape = ladders.shapes.find((shape) => shape.id === id);
+            const input = document.querySelector(`[aria-label="Row lengths for comparison shape ${id}"]`);
+            const cursor = input?.selectionStart ?? text.length;
+            shape.text = text;
+            shape.ladder = undefined;
+            shape.error = undefined;
+            shape.games.clear();
+            shape.selections.clear();
+            ladderStatus("Shape changed. Generate to update its tableaux and checker games.");
+            render();
+            const next = document.querySelector(`[aria-label="Row lengths for comparison shape ${id}"]`);
+            next?.focus();
+            next?.setSelectionRange(cursor, cursor);
+        },
+        onMaxEntry: (value) => {
+            ladders.maxEntry = value;
+            for (const shape of ladders.shapes) {
+                shape.ladder = undefined;
+                shape.error = undefined;
+                shape.games.clear();
+                shape.selections.clear();
+            }
+            document.querySelectorAll("#tableau-ladders .ladder-diagram, #tableau-ladders .generation-error").forEach((node) => node.remove());
+            ladderStatus("Maximum entry changed. Generate to update every shape.");
+        },
+        onLimit: (value) => { ladders.maxTableaux = value; },
+        onMaxBoard: (value) => { ladders.maxBoard = value; },
+        onEffort: (value) => { ladders.effort = value; },
+        onGenerate: () => { void analyzeLadders(); },
+        onCancel: () => {
+            cancelLadderAnalysis();
+            ladderStatus("Analysis cancelled. Finished searches remain available; pending games are labeled. Generate again to resume.");
+            render();
+        },
+        onGame: (rows, result, matchIndex, leafId) => openLadderGame(rows, result, matchIndex, leafId),
+        onEvent: (rows, result, matchIndex, leafId, event) => openLadderGame(rows, result, matchIndex, leafId, event),
+    };
+}
 const tableauInput = {
     shapeText: "2, 1",
     shapeValid: true,
@@ -617,6 +781,7 @@ function createHeader() {
         text: "Enter a Young tableau",
         attributes: { href: "#tableau-input" },
     }));
+    inputLinks.append(element("a", { className: "button", text: "Compare tableau ladders", attributes: { href: "#tableau-ladders" } }));
     title.append(inputLinks);
     const verification = element("div", { className: "verification-badge" });
     verification.append(element("span", { className: "verification-dot" }), element("div", {
@@ -626,6 +791,7 @@ function createHeader() {
     return header;
 }
 function render() {
+    const ladderScrolls = new Map([...document.querySelectorAll("[data-ladder-viewport]")].map((viewport) => [viewport.dataset.ladderViewport, { x: viewport.scrollLeft, y: viewport.scrollTop }]));
     app.replaceChildren();
     const shell = element("div", { className: "app-shell" });
     shell.append(createHeader());
@@ -746,6 +912,7 @@ function render() {
                 inspectLeaf(leafId);
         },
     }));
+    shell.append(createTableauLadders(ladderOptions()));
     if (state.tree !== undefined)
         shell.append(createResults(state.tree));
     shell.append(createHowItWorks());
@@ -753,7 +920,19 @@ function render() {
     footer.append(element("span", { text: "Exact path multiplicities · event-based tableaux · pure TypeScript checker engine" }), element("span", { text: "Rows increase downward; columns increase rightward." }));
     shell.append(footer);
     app.append(shell);
+    for (const viewport of document.querySelectorAll("[data-ladder-viewport]")) {
+        const scroll = ladderScrolls.get(viewport.dataset.ladderViewport);
+        if (scroll !== undefined) {
+            viewport.scrollLeft = scroll.x;
+            viewport.scrollTop = scroll.y;
+        }
+        else {
+            const stage = viewport.querySelector(".ladder-stage");
+            if (stage !== null)
+                viewport.scrollTop = Math.max(0, (parseFloat(stage.style.height) - (viewport.clientHeight || 680)) / 2);
+        }
+    }
 }
-window.addEventListener("beforeunload", () => { stopPlayback(); cancelTableauSearch(); });
+window.addEventListener("beforeunload", () => { stopPlayback(); cancelTableauSearch(); cancelLadderAnalysis(); });
 render();
 //# sourceMappingURL=main.js.map

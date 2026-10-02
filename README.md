@@ -14,6 +14,7 @@ A self-contained TypeScript web application implementing the checker-game formul
 - View terminal subsets with multiplicities and the Section 2.6 tableau attached to each individual game.
 - Click a tableau entry to return to the distinguished checker move that created it.
 - Enter a Young tableau's row lengths and entries to find every starting position on the smallest possible board and view all of their sibling tableaux.
+- Compare multiple shapes using complete ladder diagrams of all semistandard fillings up to a shared maximum entry, with minimum-board games and clickable recording events under each tableau.
 
 ## Start from a tableau
 
@@ -26,6 +27,16 @@ A tableau without the Schubert input partitions need not specify a unique starti
 The inverse uses exhaustive forward generation, rather than an unproved inverse formula. Shape fixes `B`, so only `A` and `k` need enumeration. Search limits are adjustable: by default it searches through `n=10`, with 500,000 total generated states and 12,000 states per candidate tree. Progress and cancellation are available. If any limit interrupts the search, no partial list is presented as complete and no candidate is silently skipped. Large inputs may require increasing the limits and can be expensive; a failed bounded search does not prove nonexistence.
 
 The mathematical engine is pure TypeScript and is independent of the user interface.
+
+## Compare tableau ladders
+
+Open **Tableau ladders & checker games** (or use **Compare tableau ladders** at the top). Enter row lengths, such as `2, 1`, and a shared maximum entry. No filling is needed. **Generate tableaux & games** creates every semistandard filling and all ladder moves that increase one box by exactly 1. The layered diagram shows each tableau once, including paths that join. Edge labels `+1 (r,c)` identify the changed box; levels count increments from the minimum filling.
+
+Use **+ Add another shape** and **Remove shape** to compare diagrams side by side with the same entry bound. Each diagram runs left to right from its root, scrolls independently, and has zoom, fit-width, and fit-height controls. Shape `(2,1)` with maximum entry `3`, for example, has eight tableaux. A column taller than the entry bound has no valid fillings; the empty shape has one empty tableau.
+
+Under each tableau, the app displays all checker games recording that filling on its minimum board, with their starting checkerboards and subsets. Click a game to open its starting position and play its path. Click a tableau entry to inspect its actual recording move. If there are multiple games, select which game supplies the entry events. Final Results retains all minimal starting positions and their siblings for the selected tableau. Your comparison diagrams and scroll positions remain available while inspecting a game.
+
+Games populate progressively. **Cancel analysis** keeps completed searches; generating again reuses them and retries pending or failed searches. **Analysis limits** controls tableaux per shape (default 200), maximum searched board (default 10), and generated states per tableau (default 500,000). The individual game-tree limit comes from the filled-tableau section. A diagram exceeding its tableau limit is rejected rather than truncated. A checker search that hits a limit is labeled on that tableau; other tableaux still complete, and no incomplete search is presented as a minimum-board result.
 
 ## Run
 
@@ -48,6 +59,8 @@ npm run serve
 ```
 
 The test suite checks the prescribed specialization words, all nine Table 2 positions, blocker detection, happiness, Phase 2 cleanup in both directions, invalid inputs, subset-to-partition conventions, and the exact Figure 6 and Figure 7 outputs and tableaux. Inverse tests verify round trips, preservation of siblings, cancellation and limit handling, and minimality against an independently enumerated database of every game through `n=5`.
+
+Ladder tests compare every vertex and edge with independent filling enumeration, verify paths that join, reject truncated diagrams, and round-trip every tableau of shape `(2,1)` with entry bound `3` through the checker-game search.
 
 ## Source layout
 

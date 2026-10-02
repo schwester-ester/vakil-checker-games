@@ -1199,6 +1199,33 @@ h1 {
 .input-tableau-badge { color: var(--accent); font-size: 0.8rem; font-weight: 800; }
 .minimal-starts-heading { margin-top: 24px; }
 .starting-position-results { margin: 24px 0 36px; }
+.input-navigation { display: flex; flex-wrap: wrap; gap: 10px; }
+#tableau-ladders { scroll-margin-top: 20px; }
+.ladder-search-limits { margin: 14px 0; font-size: 0.82rem; }
+.ladder-search-limits summary { cursor: pointer; margin-bottom: 12px; }
+.ladder-search-limits .labelled-control { display: inline-flex; margin: 0 16px 12px 0; }
+.ladder-search-limits .number-input { width: 120px; }
+.ladder-comparisons { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px; margin: 20px 0; }
+.ladder-shape-panel { min-width: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface-soft); }
+.ladder-shape-panel > .panel-heading-row { padding: 15px; align-items: end; }
+.ladder-shape-panel .labelled-control { flex: 1; min-width: 0; }
+.ladder-shape-panel > .generation-error { margin: 12px; }
+.ladder-viewport { overflow: auto; height: 680px; background: #f5f7f8; overscroll-behavior: contain; }
+.ladder-stage, .ladder-canvas { position: relative; }
+.ladder-canvas { transform-origin: top left; }
+.ladder-edges { position: absolute; inset: 0; overflow: visible; }
+.ladder-node { position: absolute; border: 1px solid var(--line-dark); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); padding: 14px; overflow: hidden; }
+.ladder-node > .eyebrow { font-size: 0.64rem; }
+.ladder-node-content { display: flex; flex-direction: column; align-items: flex-start; height: calc(100% - 20px); gap: 8px; overflow: auto; }
+.ladder-node-content > .tableau { flex: 0 0 auto; padding: 1px; }
+.ladder-node-content .speed-select { width: 100%; min-height: 28px; font-size: 0.71rem; }
+.ladder-board-summary { margin: 0; color: var(--accent); font-size: 0.74rem; font-weight: 700; }
+.ladder-games { overflow-y: auto; width: 100%; min-height: 76px; flex: 1; }
+.ladder-game { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px; margin-bottom: 5px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-soft); cursor: pointer; text-align: left; }
+.ladder-game:hover, .ladder-game:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.ladder-game > .checker-board { width: 64px; flex: 0 0 64px; }
+.ladder-game > span { font-size: 0.7rem; white-space: pre-line; overflow-wrap: anywhere; }
+.ladder-node-error { color: var(--danger); font-size: 0.74rem; line-height: 1.4; margin: 0; }
 
 /* Explanatory panel and footer */
 .how-panel {
