@@ -95,7 +95,7 @@ export function createInputPanel(options: InputPanelOptions): HTMLElement {
 
   const setup = element("div", { className: "setup-controls" });
   setup.append(
-    labelledControl("Board size n", numericInput(options.n, 2, 10, options.onNChange)),
+    labelledControl("Board size n", numericInput(options.n, 1, Math.max(10, options.n), options.onNChange)),
     labelledControl("White checkers k", numericInput(options.k, 0, options.n, options.onKChange)),
   );
 

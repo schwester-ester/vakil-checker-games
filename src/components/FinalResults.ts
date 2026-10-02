@@ -15,6 +15,7 @@ import { button, element } from "./dom.js";
 
 export interface FinalResultsOptions {
   readonly tree: GameTree;
+  readonly inputLeafIds?: readonly string[];
   readonly onInspectLeaf: (leafId: string) => void;
   readonly onTableauEvent: (leafId: string, event: TableauEvent) => void;
 }
@@ -25,10 +26,15 @@ function gameCard(
   gameNumber: number,
   onInspectLeaf: (leafId: string) => void,
   onTableauEvent: (leafId: string, event: TableauEvent) => void,
+  inputLeafIds?: readonly string[],
 ): HTMLElement {
   const output = outputSubset(leaf);
   const gamma = partitionFromSubset(tree.n, tree.k, output);
   const card = element("article", { className: "game-card" });
+  if (inputLeafIds?.includes(leaf.id)) {
+    card.classList.add("game-card--input");
+    card.append(element("p", { className: "input-tableau-badge", text: "Your input tableau" }));
+  }
   const header = element("div", { className: "game-card-header" });
   const title = element("div");
   title.append(
@@ -108,6 +114,7 @@ export function createFinalResults(options: FinalResultsOptions): HTMLElement {
           indexById.get(leaf.id) ?? 0,
           options.onInspectLeaf,
           options.onTableauEvent,
+          options.inputLeafIds,
         ),
       );
     }

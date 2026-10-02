@@ -25,6 +25,29 @@ import {
   type InputMode,
 } from "./components/InputPanel.js";
 import { button, element, labelledControl } from "./components/dom.js";
+import { createTableauInput } from "./components/TableauInput.js";
+import { findMinimalTableauGames, type TableauMatch, type TableauSearchResult } from "./math/inverseTableau.js";
+import { createCheckerBoard } from "./components/CheckerBoard.js";
+import { formatSubset } from "./math/validation.js";
+
+const tableauInput = {
+  shapeText: "2, 1",
+  shapeValid: true,
+  rows: [[1, 3], [2]],
+  maxBoardSize: 10,
+  effort: 500_000,
+  maxTreeNodes: 12_000,
+  status: "",
+  error: undefined as string | undefined,
+  match: undefined as TableauMatch | undefined,
+  result: undefined as TableauSearchResult | undefined,
+  controller: undefined as AbortController | undefined,
+};
+
+function cancelTableauSearch(): void {
+  tableauInput.controller?.abort();
+  tableauInput.controller = undefined;
+}
 
 type ViewMode = "flow" | "final";
 
@@ -77,6 +100,9 @@ if (appElement === null) throw new Error("Missing #app root element.");
 const app: HTMLElement = appElement;
 
 function invalidateTree(): void {
+  cancelTableauSearch();
+  tableauInput.match = undefined;
+  tableauInput.result = undefined;
   stopPlayback();
   state.tree = undefined;
   state.selectedNodeId = "";
@@ -187,6 +213,9 @@ function clearInput(): void {
 }
 
 function loadExample(n: number, A: readonly number[], B: readonly number[]): void {
+  cancelTableauSearch();
+  tableauInput.match = undefined;
+  tableauInput.result = undefined;
   stopPlayback();
   state.n = n;
   state.k = A.length;
@@ -204,6 +233,9 @@ function loadExample(n: number, A: readonly number[], B: readonly number[]): voi
 }
 
 function generate(): void {
+  cancelTableauSearch();
+  tableauInput.match = undefined;
+  tableauInput.result = undefined;
   const validation = validateInitialWhite(state.n, state.k, state.white);
   const diagnostics = state.inputMode === "subsets" ? subsetDiagnostics() : { errors: [] };
   if (!validation.valid || diagnostics.errors.length > 0) return;
@@ -228,6 +260,86 @@ function generate(): void {
   }
   render();
   requestAnimationFrame(() => document.querySelector("#results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+async function searchTableau(): Promise<void> {
+  if (!tableauInput.shapeValid) return;
+  cancelTableauSearch();
+  stopPlayback();
+  const controller = new AbortController();
+  tableauInput.controller = controller;
+  tableauInput.error = undefined;
+  tableauInput.match = undefined;
+  tableauInput.result = undefined;
+  tableauInput.status = "Searching boards in increasing size…";
+  state.tree = undefined;
+  render();
+  try {
+    const result = await findMinimalTableauGames(tableauInput.rows, {
+      maxBoardSize: tableauInput.maxBoardSize,
+      maxTotalNodes: tableauInput.effort,
+      maxNodesPerTree: tableauInput.maxTreeNodes,
+      signal: controller.signal,
+      onProgress: (n, candidates) => {
+        tableauInput.status = `Searching n = ${n} · ${candidates.toLocaleString()} starting positions checked`;
+        const status = document.querySelector("#tableau-search-status");
+        if (status !== null) status.textContent = tableauInput.status;
+      },
+    });
+    if (controller.signal.aborted) return;
+    tableauInput.result = result;
+    tableauInput.status = `Exhaustive search complete: ${result.matches.length} starting positions on the minimum board n = ${result.n}.`;
+    activateTableauMatch(0);
+    state.view = "final";
+  } catch (error) {
+    if (controller.signal.aborted) return;
+    tableauInput.error = error instanceof BranchLimitError
+      ? "A candidate exceeded the search effort or per-game-tree limit. Increase those limits and try again. The search stopped without skipping this candidate, so the complete set of minimal starting positions is not yet known."
+      : error instanceof Error ? error.message : "Tableau search failed.";
+    tableauInput.status = "Search stopped without a result.";
+  } finally {
+    if (tableauInput.controller === controller) {
+      tableauInput.controller = undefined;
+      render();
+    }
+  }
+}
+
+function activateTableauMatch(index: number): void {
+  const match = tableauInput.result?.matches[index];
+  if (match === undefined || tableauInput.match === match) return;
+  stopPlayback();
+  tableauInput.match = match;
+  const tree = match.tree;
+  state.n = tree.n;
+  state.k = tree.k;
+  state.white = initialWhiteConfiguration(tree.A, tree.B);
+  state.subsetA = formatSubsetText(tree.A);
+  state.subsetB = formatSubsetText(tree.B);
+  state.tree = tree;
+  state.selectedNodeId = match.leafIds[0] ?? tree.root.id;
+  state.playbackLeafId = state.selectedNodeId;
+  state.collapsed = new Set();
+  state.flowTransform = { scale: tree.nodeCount > 100 ? 0.35 : 0.7, x: 28, y: 28 };
+  state.generationError = undefined;
+}
+
+function changeTableauShape(text: string): void {
+  tableauInput.shapeText = text;
+  const parts = text.trim() === "" ? [] : text.trim().split(/[\s,;]+/).map(Number);
+  if (parts.some((part, i) => !Number.isSafeInteger(part) || part < 1 || part > 100 || (i > 0 && part > parts[i - 1]!)) || parts.reduce((a, b) => a + b, 0) > 1000) {
+    tableauInput.shapeValid = false;
+    invalidateTree();
+    tableauInput.error = "Use positive, weakly decreasing row lengths (at most 100 per row and 1,000 cells total), or leave blank for an empty tableau.";
+    render();
+    return;
+  }
+  tableauInput.shapeValid = true;
+  tableauInput.rows = parts.map((length, r) => Array.from({ length }, (_, c) => tableauInput.rows[r]?.[c] ?? r + 1));
+  tableauInput.error = undefined;
+  tableauInput.status = "";
+  invalidateTree();
+  render();
 }
 
 function selectedNode(tree: GameTree): GameNode {
@@ -446,18 +558,45 @@ function createResults(tree: GameTree): HTMLElement {
     }),
   );
   const resultMeta = element("div", { className: "result-meta" });
+  const allMatches = tableauInput.result?.matches;
   resultMeta.append(
-    element("span", { text: `${tree.nodeCount} states` }),
-    element("span", { text: `${tree.leaves.length} terminal games` }),
+    element("span", { text: `${state.view === "final" && allMatches !== undefined ? allMatches.reduce((sum, match) => sum + match.tree.nodeCount, 0) : tree.nodeCount} states` }),
+    element("span", { text: `${state.view === "final" && allMatches !== undefined ? allMatches.reduce((sum, match) => sum + match.tree.leaves.length, 0) : tree.leaves.length} terminal games` }),
     element("span", { text: `${tree.schedule.length} black moves` }),
   );
   topbar.append(viewSwitch, resultMeta);
   section.append(topbar);
 
   if (state.view === "final") {
+    if (allMatches !== undefined) {
+      for (const [index, match] of allMatches.entries()) {
+        const start = element("section", { className: "starting-position-results", attributes: { "data-start-index": String(index) } });
+        const heading = element("div", { className: "results-summary panel-card recovered-position" });
+        const description = element("div");
+        description.append(
+          element("h2", { className: "panel-title", text: `Starting position ${index + 1} · k = ${match.tree.k}` }),
+          element("p", { text: `A = ${formatSubset(match.tree.A)}; B = ${formatSubset(match.tree.B)}` }),
+          button("Explore this starting position", () => {
+            activateTableauMatch(index);
+            state.view = "flow";
+            selectNode(match.tree.root.id);
+          }),
+        );
+        heading.append(createCheckerBoard({ n: match.tree.n, black: match.tree.root.state.black, white: match.tree.root.state.white, pixelSize: 180 }), description);
+        start.append(heading, createFinalResults({
+          tree: match.tree,
+          inputLeafIds: match.leafIds,
+          onInspectLeaf: (leafId) => { activateTableauMatch(index); inspectLeaf(leafId); },
+          onTableauEvent: (leafId, event) => { activateTableauMatch(index); inspectTableauEvent(leafId, event); },
+        }));
+        section.append(start);
+      }
+      return section;
+    }
     section.append(
       createFinalResults({
         tree,
+        ...(tableauInput.match === undefined ? {} : { inputLeafIds: tableauInput.match.leafIds }),
         onInspectLeaf: inspectLeaf,
         onTableauEvent: inspectTableauEvent,
       }),
@@ -563,9 +702,16 @@ function createHeader(): HTMLElement {
     element("h1", { text: "Vakil Checker Games" }),
     element("p", {
       className: "subtitle",
-      text: "Build an initial white-checker position, generate every legal checker game, inspect the specialization tree, and trace each terminal game to its tableau.",
+      text: "Start from a checker position or a Young tableau, generate every sibling checker game, and explore the bijection through the specialization tree.",
     }),
   );
+  const inputLinks = element("nav", { className: "input-navigation", attributes: { "aria-label": "Input sections" } });
+  inputLinks.append(element("a", {
+    className: "button button--primary",
+    text: "Enter a Young tableau",
+    attributes: { href: "#tableau-input" },
+  }));
+  title.append(inputLinks);
   const verification = element("div", { className: "verification-badge" });
   verification.append(
     element("span", { className: "verification-dot" }),
@@ -633,6 +779,68 @@ function render(): void {
     ...(state.generationError === undefined ? {} : { generationError: state.generationError }),
   };
   shell.append(createInputPanel(inputOptions));
+  shell.append(createTableauInput({
+    shapeText: tableauInput.shapeText,
+    shapeValid: tableauInput.shapeValid,
+    rows: tableauInput.rows,
+    maxBoardSize: tableauInput.maxBoardSize,
+    effort: tableauInput.effort,
+    maxTreeNodes: tableauInput.maxTreeNodes,
+    status: tableauInput.status,
+    searching: tableauInput.controller !== undefined,
+    ...(tableauInput.error === undefined ? {} : { error: tableauInput.error }),
+    ...(tableauInput.result === undefined ? {} : { result: tableauInput.result }),
+    onShape: (text) => {
+      const input = document.querySelector<HTMLInputElement>('[aria-label="Tableau row lengths"]');
+      const cursor = input?.selectionStart ?? text.length;
+      changeTableauShape(text);
+      const next = document.querySelector<HTMLInputElement>('[aria-label="Tableau row lengths"]');
+      next?.focus();
+      next?.setSelectionRange(cursor, cursor);
+    },
+    onCell: (row, col, text) => {
+      const input = document.querySelector<HTMLInputElement>(`[data-tableau-cell="${row}-${col}"]`);
+      const cursor = input?.selectionStart ?? text.length;
+      tableauInput.rows[row]![col] = /^\d+$/.test(text) ? Number(text) : NaN;
+      if (tableauInput.shapeValid) tableauInput.error = undefined;
+      tableauInput.status = "";
+      invalidateTree();
+      render();
+      const next = document.querySelector<HTMLInputElement>(`[data-tableau-cell="${row}-${col}"]`);
+      if (next !== null) {
+        next.value = text;
+        next.focus();
+        next.setSelectionRange(cursor, cursor);
+      }
+    },
+    onMaxBoardSize: (n) => {
+      if (Number.isSafeInteger(n) && n >= 1 && n <= 30) tableauInput.maxBoardSize = n;
+    },
+    onEffort: (nodes) => { tableauInput.effort = nodes; },
+    onMaxTreeNodes: (nodes) => {
+      if (Number.isSafeInteger(nodes) && nodes >= 1 && nodes <= 120_000) tableauInput.maxTreeNodes = nodes;
+    },
+    onSearch: () => { void searchTableau(); },
+    onCancel: () => {
+      cancelTableauSearch();
+      tableauInput.status = "Search cancelled. No minimum has been claimed.";
+      render();
+    },
+    onExample: (rows) => {
+      invalidateTree();
+      tableauInput.rows = rows;
+      tableauInput.shapeText = rows.map((row) => row.length).join(", ");
+      tableauInput.shapeValid = true;
+      tableauInput.error = undefined;
+      tableauInput.status = "";
+      render();
+    },
+    onTrace: (index) => {
+      activateTableauMatch(index);
+      const leafId = tableauInput.match?.leafIds[0];
+      if (leafId !== undefined) inspectLeaf(leafId);
+    },
+  }));
   if (state.tree !== undefined) shell.append(createResults(state.tree));
   shell.append(createHowItWorks());
 
@@ -645,5 +853,5 @@ function render(): void {
   app.append(shell);
 }
 
-window.addEventListener("beforeunload", stopPlayback);
+window.addEventListener("beforeunload", () => { stopPlayback(); cancelTableauSearch(); });
 render();

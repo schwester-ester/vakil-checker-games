@@ -82,6 +82,24 @@ In the distinguished `A-γ` move marked `†`, let the rising white checker be t
 
 The events occur from right to left within a tableau row, so each new entry is prepended. The engine stores the event and its checker step on the branch itself; the tableau is not inferred from the terminal subset.
 
+## Exhaustive tableau-to-game search and minimality
+
+The input is a straight semistandard tableau `T` of shape `beta`. Trailing empty rows are ignored. A tableau alone does not specify the other Schubert input `alpha`, so there can be multiple starts with the same recorded tableau. We return all such starts on the minimum board, including all possible values of `k`.
+
+Every tableau entry is a row rank in `{1,...,k}`. Thus `k >= max(number of nonempty rows, largest entry)`. Its shape fits inside the `k × (n-k)` rectangle, so `n >= k + beta_1`. These bounds exclude all smaller boards without generating them. The empty tableau is handled on the smallest positive board, `n=1`, where the specialization word is empty.
+
+For each remaining `n` in increasing order, enumerate every `k` from that lower bound through `n-beta_1`. The existing shape invariant says that the recorded tableau has shape `partitionFromSubset(n,k,B)`, so the unique possible second subset is
+
+```text
+B_i = n-k+i-beta_i   (i=1,...,k; pad beta with zeros).
+```
+
+This is an increasing `k`-subset: adjacent differences are `1+beta_i-beta_(i+1) >= 1`, and the rectangle bound places it in `{1,...,n}`. Enumerate every `A` in lexicographic order, discard exactly the initially unhappy configurations (which have no games), and run `generateGameTree` on every remaining start. Compare the input to each leaf's actual Section 2.6 event tableau, including its shape and all entries. After finding a match, finish enumerating that entire board size. Return every matching start's full tree and all matching leaf IDs, retaining every sibling path. The empty tableau on `n=1` has both `k=0` and `k=1` starts.
+
+**Minimality and completeness proof.** Any game recording `T` satisfies the bounds above, and its `B` is the subset just derived. Thus the enumeration includes every possible game recording `T` on every smaller positive board and on the first matching board. Exhausting all smaller sizes proves minimality; exhausting every candidate on the matching size proves that the returned set of starts is complete. Results are ordered by increasing `k`, lexicographic `A`, and existing leaf order. This proof uses the forward map and shape invariant, not a conjectural direct inverse. Node limits and cancellation abort the entire search, even if some matches have already been found; skipping an oversized candidate or presenting a partial set as complete is forbidden.
+
+The database for regression testing independently enumerates all pairs `(A,B)` through `n=5`, records each tableau's smallest board and every matching start and leaf on that board, and compares those complete results with the inverse search. No persistent database or network service is needed for the website.
+
 ## Regression checks
 
 The test suite verifies:

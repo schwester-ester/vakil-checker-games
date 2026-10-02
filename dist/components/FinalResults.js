@@ -3,10 +3,14 @@ import { formatPartition, formatSubset, partitionFromSubset, } from "../math/val
 import { createCheckerBoard } from "./CheckerBoard.js";
 import { createTableau } from "./Tableau.js";
 import { button, element } from "./dom.js";
-function gameCard(tree, leaf, gameNumber, onInspectLeaf, onTableauEvent) {
+function gameCard(tree, leaf, gameNumber, onInspectLeaf, onTableauEvent, inputLeafIds) {
     const output = outputSubset(leaf);
     const gamma = partitionFromSubset(tree.n, tree.k, output);
     const card = element("article", { className: "game-card" });
+    if (inputLeafIds?.includes(leaf.id)) {
+        card.classList.add("game-card--input");
+        card.append(element("p", { className: "input-tableau-badge", text: "Your input tableau" }));
+    }
     const header = element("div", { className: "game-card-header" });
     const title = element("div");
     title.append(element("p", { className: "eyebrow", text: `Game ${gameNumber}` }), element("h4", { text: `Output S = ${formatSubset(output)}` }));
@@ -56,7 +60,7 @@ export function createFinalResults(options) {
         }));
         const cards = element("div", { className: "game-card-grid" });
         for (const leaf of group.leaves) {
-            cards.append(gameCard(options.tree, leaf, indexById.get(leaf.id) ?? 0, options.onInspectLeaf, options.onTableauEvent));
+            cards.append(gameCard(options.tree, leaf, indexById.get(leaf.id) ?? 0, options.onInspectLeaf, options.onTableauEvent, options.inputLeafIds));
         }
         groupSection.append(groupHeading, cards);
         section.append(groupSection);

@@ -5,8 +5,8 @@ import { clonePositions, compareByRowThenColumn, positionKey } from "./positions
  * Each e_j swaps the black checkers in adjacent rows j and j+1.
  */
 export function specializationReflections(n) {
-    if (!Number.isInteger(n) || n < 2) {
-        throw new RangeError("Board size n must be an integer at least 2.");
+    if (!Number.isInteger(n) || n < 1) {
+        throw new RangeError("Board size n must be a positive integer.");
     }
     const result = [];
     for (let start = n - 1; start >= 1; start -= 1) {

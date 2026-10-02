@@ -126,6 +126,10 @@ h1 {
   line-height: 1.62;
 }
 
+.input-navigation { margin-top: 18px; }
+.input-navigation a { display: inline-block; text-decoration: none; }
+#tableau-input { scroll-margin-top: 20px; }
+
 .verification-badge {
   display: flex;
   align-items: center;
@@ -230,6 +234,7 @@ h1 {
 
 .setup-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   gap: 18px;
   margin: 22px 0 6px;
@@ -1168,6 +1173,32 @@ h1 {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.25rem;
 }
+
+.tableau-input-intro {
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.tableau-shape-help { margin: 12px 0; }
+.tableau-input-work {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px;
+  padding: 12px 0 22px;
+}
+.tableau-input-work > div:last-child { flex: 1; min-width: 220px; }
+.tableau-editor { max-width: 100%; overflow-x: auto; padding: 4px; }
+.tableau-entry { text-align: center; flex-shrink: 0; padding: 0; }
+.tableau-search-status { margin: 14px 0 0; color: var(--accent); font-size: 0.83rem; }
+.recovered-position { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; margin-top: 24px; }
+.recovered-position > div { flex: 1; min-width: 220px; }
+.game-card--input { border: 2px solid var(--accent); }
+.input-tableau-badge { color: var(--accent); font-size: 0.8rem; font-weight: 800; }
+.minimal-starts-heading { margin-top: 24px; }
+.starting-position-results { margin: 24px 0 36px; }
 
 /* Explanatory panel and footer */
 .how-panel {
