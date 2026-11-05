@@ -1,10 +1,11 @@
 import type { CheckerMoveArrow, CheckerPath } from "../math/moveArrows.js";
+import type { BoardHistoryOptions } from "../math/boardHistory.js";
 import type { GameNode, Position } from "../math/types.js";
 import { formatPosition } from "../math/positions.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
 import { element } from "./dom.js";
 
-export interface GameInspectorOptions {
+export interface GameInspectorOptions extends BoardHistoryOptions {
   readonly node: GameNode;
   readonly totalSteps: number;
   readonly showAnnotations: boolean;
@@ -52,6 +53,8 @@ export function createGameInspector(options: GameInspectorOptions): HTMLElement 
         black: options.node.state.black,
         white: options.node.state.white,
         ...(options.movePaths === undefined ? {} : { movePaths: options.movePaths }),
+        ...(options.initialWhite === undefined ? {} : { initialWhite: options.initialWhite }),
+        ...(options.criticalSquares === undefined ? {} : { criticalSquares: options.criticalSquares }),
         pixelSize: 300,
         showLabels: true,
       }),
@@ -70,6 +73,7 @@ export function createGameInspector(options: GameInspectorOptions): HTMLElement 
       n: options.node.state.n,
       black: info.blackMove.before,
       white: info.phase1Before,
+      criticalSquares: (options.criticalSquares ?? []).filter((square) => square.step < options.node.state.step),
       pixelSize: 250,
       showLabels: true,
       ...(options.showAnnotations
@@ -86,6 +90,8 @@ export function createGameInspector(options: GameInspectorOptions): HTMLElement 
       white: options.node.state.white,
       ...(options.moveArrows === undefined ? {} : { moveArrows: options.moveArrows }),
       ...(options.movePaths === undefined ? {} : { movePaths: options.movePaths }),
+      ...(options.initialWhite === undefined ? {} : { initialWhite: options.initialWhite }),
+      ...(options.criticalSquares === undefined ? {} : { criticalSquares: options.criticalSquares }),
       pixelSize: 250,
       showLabels: true,
     }),

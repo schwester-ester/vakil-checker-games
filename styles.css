@@ -1464,3 +1464,9 @@ h1 {
 .show-move-arrows .move-arrow-legend { display: flex; }
 .move-arrow-key { font-weight: 650; }
 .checker-route-start { fill: #fff; stroke: #52606d; stroke-width: 1; }
+.checker-initial-positions, .checker-critical-squares { display: none; }
+.show-initial-positions .checker-initial-positions,
+.show-critical-squares .checker-critical-squares { display: inline; }
+.checker-initial-outline { fill: none; stroke: #b8bec7; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.checker-critical-square { fill: none; stroke: #52606d; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.checker-critical-entry { fill: #344054; stroke: #fff; stroke-width: 3; paint-order: stroke fill; stroke-linejoin: round; font-weight: 700; }

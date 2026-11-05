@@ -1,6 +1,7 @@
 import type { GameNode, GameTree, MoveInfo, Position } from "./types.js";
 import { samePosition } from "./positions.js";
 import { pathToNode } from "./generateGames.js";
+import { boardHistoryOptions, type BoardHistoryOptions } from "./boardHistory.js";
 
 export interface CheckerMoveArrow {
   readonly kind: "swap" | "west" | "north";
@@ -35,13 +36,14 @@ export function pathsForNode(tree: GameTree, node: GameNode): CheckerPath[] {
   return paths;
 }
 
-export function boardMoveOptions(tree: GameTree, node: GameNode): {
+export function boardMoveOptions(tree: GameTree, node: GameNode): BoardHistoryOptions & {
   movePaths?: readonly CheckerPath[];
   moveArrows?: readonly CheckerMoveArrow[];
 } {
-  return node.state.step === tree.schedule.length
+  const moves = node.state.step === tree.schedule.length
     ? { movePaths: pathsForNode(tree, node) }
     : { moveArrows: node.moveInfo === undefined ? [] : arrowsForMove(node.moveInfo) };
+  return { ...boardHistoryOptions(tree, node), ...moves };
 }
 
 /** Keep checker identity through the row swap and any subsequent cleanup. */

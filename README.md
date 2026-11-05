@@ -19,6 +19,8 @@ A self-contained TypeScript web application implementing the checker-game formul
 
 The sticky **Show checker move arrows (all boards)** toggle beside **Only white checkers** overlays white-checker moves. Purple marks swaps, including Phase 2 cleanup joined with a rounded elbow; orange marks west slides; blue marks north slides that record tableau entries. Intermediate boards show their incoming move, while terminal boards show exactly one continuous route per white checker, following its complete game history. Small circles mark the starting squares, including stationary checkers. Initial boards and the inspector’s before board have no arrows.
 
+**Show initial positions** adds light gray outlines of the initial white checkers to every final game board. **Show critical squares** gives each tableau-recording move's descending black checker square a bolder border and labels it with the recorded tableau entry. Final boards show the complete recording history; intermediate boards show only entries already recorded. Both toggles work independently of the move arrows and remain active when exploring other games.
+
 ## Start from a tableau
 
 Use **Start from a Young tableau** below the checker input. Enter weakly decreasing row lengths (for example `2, 1`), then fill the cells with positive integers. Rows must weakly increase and columns must strictly increase. These are straight semistandard tableaux in the same convention as Final Results, not skew tableaux.

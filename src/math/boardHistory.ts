@@ -1,0 +1,23 @@
+import type { GameNode, GameTree, Position } from "./types.js";
+
+export interface RecordedCriticalSquare extends Position {
+  readonly entry: number;
+  readonly step: number;
+}
+
+export interface BoardHistoryOptions {
+  readonly initialWhite?: readonly Position[];
+  readonly criticalSquares?: readonly RecordedCriticalSquare[];
+}
+
+/** Recording history belongs to this path; initial outlines belong only to outputs. */
+export function boardHistoryOptions(tree: GameTree, node: GameNode): BoardHistoryOptions {
+  return {
+    ...(node.state.step === tree.schedule.length ? { initialWhite: tree.root.state.white } : {}),
+    criticalSquares: node.state.tableauEvents.map((event) => ({
+      ...tree.schedule[event.step - 1]!.descending,
+      entry: event.entry,
+      step: event.step,
+    })),
+  };
+}

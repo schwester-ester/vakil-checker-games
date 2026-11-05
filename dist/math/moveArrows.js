@@ -1,5 +1,6 @@
 import { samePosition } from "./positions.js";
 import { pathToNode } from "./generateGames.js";
+import { boardHistoryOptions } from "./boardHistory.js";
 /** Match each move against the positions before that step, updating swaps simultaneously. */
 export function pathsForNode(tree, node) {
     const paths = tree.root.state.white.map((start, checkerIndex) => ({
@@ -22,9 +23,10 @@ export function pathsForNode(tree, node) {
     return paths;
 }
 export function boardMoveOptions(tree, node) {
-    return node.state.step === tree.schedule.length
+    const moves = node.state.step === tree.schedule.length
         ? { movePaths: pathsForNode(tree, node) }
         : { moveArrows: node.moveInfo === undefined ? [] : arrowsForMove(node.moveInfo) };
+    return { ...boardHistoryOptions(tree, node), ...moves };
 }
 /** Keep checker identity through the row swap and any subsequent cleanup. */
 export function arrowsForMove(info) {

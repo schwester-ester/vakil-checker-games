@@ -19,6 +19,8 @@ import { tableauFromEvents, tableauValues } from "./math/tableau.js";
 import { boardMoveOptions } from "./math/moveArrows.js";
 let onlyWhiteCheckers = false;
 let showMoveArrows = false;
+let showInitialPositions = false;
+let showCriticalSquares = false;
 const equivalence = {
     shapeText: "2, 1", k: 3,
     onlyMultiple: false,
@@ -900,7 +902,7 @@ function createHeader() {
 function render() {
     const ladderScrolls = new Map([...document.querySelectorAll("[data-ladder-viewport]")].map((viewport) => [viewport.dataset.ladderViewport, { x: viewport.scrollLeft, y: viewport.scrollTop }]));
     app.replaceChildren();
-    const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}` });
+    const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}${showInitialPositions ? " show-initial-positions" : ""}${showCriticalSquares ? " show-critical-squares" : ""}` });
     shell.append(createHeader());
     const boardDisplay = element("div", { className: "board-display-options", attributes: { "aria-label": "Board display options" } });
     boardDisplay.append(checkboxControl("Only white checkers (all boards)", onlyWhiteCheckers, (checked) => {
@@ -911,6 +913,14 @@ function render() {
         showMoveArrows = checked;
         setCheckerMoveArrowsVisible(checked);
         shell.classList.toggle("show-move-arrows", checked);
+    }));
+    boardDisplay.append(checkboxControl("Show initial positions", showInitialPositions, (checked) => {
+        showInitialPositions = checked;
+        shell.classList.toggle("show-initial-positions", checked);
+    }));
+    boardDisplay.append(checkboxControl("Show critical squares", showCriticalSquares, (checked) => {
+        showCriticalSquares = checked;
+        shell.classList.toggle("show-critical-squares", checked);
     }));
     const arrowLegend = element("div", { className: "move-arrow-legend", attributes: { "aria-label": "Checker move arrow colors" } });
     for (const [kind, label] of [["swap", "Swap + cleanup"], ["west", "West slide"], ["north", "North slide · tableau entry"]]) {

@@ -198,6 +198,48 @@ export function createCheckerBoard(options) {
             }
         svg.append(arrows);
     }
+    if (options.initialWhite !== undefined) {
+        const outlines = svgElement("g", { class: "checker-initial-positions", "pointer-events": "none" });
+        for (const checker of options.initialWhite) {
+            const outline = svgElement("circle", {
+                cx: origin + (checker.col - 0.5) * cell,
+                cy: origin + (checker.row - 0.5) * cell,
+                r: cell * 0.22,
+                class: "checker-initial-outline",
+            });
+            const title = svgElement("title");
+            title.textContent = `Initial white checker at (${checker.row},${checker.col})`;
+            outline.append(title);
+            outlines.append(outline);
+        }
+        svg.append(outlines);
+    }
+    if (options.criticalSquares !== undefined && options.criticalSquares.length > 0) {
+        const squares = svgElement("g", { class: "checker-critical-squares", "pointer-events": "none" });
+        for (const square of options.criticalSquares) {
+            const group = svgElement("g", { "data-step": square.step, "data-row": square.row, "data-col": square.col });
+            const title = svgElement("title");
+            title.textContent = `Step ${square.step}: tableau entry ${square.entry}, critical square (${square.row},${square.col})`;
+            const label = svgElement("text", {
+                x: origin + (square.col - 0.5) * cell,
+                y: origin + (square.row - 0.5) * cell,
+                "text-anchor": "middle",
+                "dominant-baseline": "central",
+                "font-size": cell * 0.44,
+                class: "checker-critical-entry",
+            });
+            label.textContent = String(square.entry);
+            group.append(title, svgElement("rect", {
+                x: origin + (square.col - 1) * cell,
+                y: origin + (square.row - 1) * cell,
+                width: cell,
+                height: cell,
+                class: "checker-critical-square",
+            }), label);
+            squares.append(group);
+        }
+        svg.append(squares);
+    }
     if (options.interactive === true && options.onToggleWhite !== undefined) {
         for (let row = 1; row <= options.n; row += 1) {
             for (let col = 1; col <= options.n; col += 1) {
