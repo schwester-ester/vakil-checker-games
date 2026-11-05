@@ -40,6 +40,7 @@ let onlyWhiteCheckers = false;
 let showMoveArrows = false;
 let showInitialPositions = false;
 let showCriticalSquares = false;
+let showFinalWhiteCheckers = true;
 
 const equivalence = {
   shapeText: "2, 1", k: 3,
@@ -986,7 +987,7 @@ function createHeader(): HTMLElement {
 function render(): void {
   const ladderScrolls = new Map([...document.querySelectorAll<HTMLElement>("[data-ladder-viewport]")].map((viewport) => [viewport.dataset.ladderViewport, { x: viewport.scrollLeft, y: viewport.scrollTop }]));
   app.replaceChildren();
-  const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}${showInitialPositions ? " show-initial-positions" : ""}${showCriticalSquares ? " show-critical-squares" : ""}` });
+  const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}${showInitialPositions ? " show-initial-positions" : ""}${showCriticalSquares ? " show-critical-squares" : ""}${showFinalWhiteCheckers ? "" : " hide-final-white-checkers"}` });
   shell.append(createHeader());
   const boardDisplay = element("div", { className: "board-display-options", attributes: { "aria-label": "Board display options" } });
   boardDisplay.append(checkboxControl("Only white checkers (all boards)", onlyWhiteCheckers, (checked) => {
@@ -1005,6 +1006,10 @@ function render(): void {
   boardDisplay.append(checkboxControl("Show critical squares", showCriticalSquares, (checked) => {
     showCriticalSquares = checked;
     shell.classList.toggle("show-critical-squares", checked);
+  }));
+  boardDisplay.append(checkboxControl("Show final white checkers", showFinalWhiteCheckers, (checked) => {
+    showFinalWhiteCheckers = checked;
+    shell.classList.toggle("hide-final-white-checkers", !checked);
   }));
   const arrowLegend = element("div", { className: "move-arrow-legend", attributes: { "aria-label": "Checker move arrow colors" } });
   for (const [kind, label] of [["swap", "Swap + cleanup"], ["west", "West slide"], ["north", "North slide · tableau entry"]]) {

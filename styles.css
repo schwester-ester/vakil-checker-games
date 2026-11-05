@@ -1473,3 +1473,4 @@ h1 {
 .checker-initial-outline { fill: none; stroke: #b8bec7; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 .checker-critical-square { fill: none; stroke: #52606d; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .checker-critical-entry { fill: #344054; stroke: #fff; stroke-width: 3; paint-order: stroke fill; stroke-linejoin: round; font-weight: 700; }
+.hide-final-white-checkers .checker-board--final .white-checker { display: none; }

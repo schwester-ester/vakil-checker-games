@@ -15,7 +15,7 @@ export function createCheckerBoard(options) {
     const boardSize = options.n * cell;
     const total = boardSize + labelMargin + 4;
     const svg = svgElement("svg", {
-        class: `checker-board${options.compact ? " checker-board--compact" : ""}`,
+        class: `checker-board${options.compact ? " checker-board--compact" : ""}${options.initialWhite !== undefined ? " checker-board--final" : ""}`,
         viewBox: `0 0 ${total} ${total}`,
         width: options.pixelSize ?? total,
         height: options.pixelSize ?? total,
