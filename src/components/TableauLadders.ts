@@ -2,6 +2,7 @@ import type { TableauSearchResult } from "../math/inverseTableau.js";
 import type { TableauLadder, LadderNode } from "../math/tableauLadder.js";
 import type { TableauEvent } from "../math/types.js";
 import { formatSubset } from "../math/validation.js";
+import { boardMoveOptions } from "../math/moveArrows.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
 import { createTableau } from "./Tableau.js";
 import { button, element, labelledControl, svgElement } from "./dom.js";
@@ -74,14 +75,16 @@ export function createLadderNodeContent(shape: ShapeAnalysis, node: LadderNode, 
   }
   const list = element("div", { className: "ladder-games" });
   games.forEach(({ match, matchIndex, leafId }, gameIndex) => {
+    const finalNode = match.tree.nodesById.get(leafId)!;
     const game = button("", () => {
       shape.selections.set(node.id, gameIndex);
       options.onGame(node.rows, result, matchIndex, leafId);
     }, "ladder-game");
-    game.setAttribute("aria-label", `Explore starting position of Game ${gameIndex + 1}`);
+    game.setAttribute("aria-label", `Trace Game ${gameIndex + 1} from its final state`);
+    game.setAttribute("data-leaf-id", leafId);
     game.append(
-      createCheckerBoard({ n: result.n, black: match.tree.root.state.black, white: match.tree.root.state.white, compact: true, showLabels: false, pixelSize: 64 }),
-      element("span", { text: `Game ${gameIndex + 1} · k=${match.tree.k}\nA=${formatSubset(match.tree.A)}\nB=${formatSubset(match.tree.B)}` }),
+      createCheckerBoard({ n: result.n, black: finalNode.state.black, white: finalNode.state.white, ...boardMoveOptions(match.tree, finalNode), compact: true, showLabels: false, pixelSize: 96 }),
+      element("span", { text: `Game ${gameIndex + 1} · final state · k=${match.tree.k}\nA=${formatSubset(match.tree.A)}\nB=${formatSubset(match.tree.B)}` }),
     );
     list.append(game);
   });
@@ -156,7 +159,7 @@ function createDiagram(shape: ShapeAnalysis, options: TableauLaddersOptions): HT
 
 export function createTableauLadders(options: TableauLaddersOptions): HTMLElement {
   const section = element("section", { className: "input-card panel-card", attributes: { id: "tableau-ladders", "aria-labelledby": "ladder-heading" } });
-  section.append(element("p", { className: "eyebrow", text: "Compare shapes" }), element("h2", { className: "panel-title", text: "Tableau ladders & checker games", attributes: { id: "ladder-heading" } }), element("p", { className: "tableau-input-intro", text: "Choose row lengths and a shared maximum entry. Generate every semistandard filling, connected by moves that increase exactly one box by 1. Paths can join: each tableau appears once, with all legal ladder moves shown. Under each tableau are all corresponding games on its smallest board. Click a checkerboard to explore its starting position, or a tableau entry to inspect its recording move." }));
+  section.append(element("p", { className: "eyebrow", text: "Compare shapes" }), element("h2", { className: "panel-title", text: "Tableau ladders & checker games", attributes: { id: "ladder-heading" } }), element("p", { className: "tableau-input-intro", text: "Choose row lengths and a shared maximum entry. Generate every semistandard filling, connected by moves that increase exactly one box by 1. Paths can join: each tableau appears once, with all legal ladder moves shown. Under each tableau are the final boards of all corresponding games on its smallest board. All board display toggles apply. Click a checkerboard to trace its game, or a tableau entry to inspect its recording move." }));
   const settings = element("div", { className: "setup-controls" });
   function numeric(label: string, value: number, min: number, max: number, callback: (value: number) => void): HTMLLabelElement {
     const input = element("input", { className: "number-input", attributes: { type: "number", min: String(min), max: String(max), value: String(value), "aria-label": label } });

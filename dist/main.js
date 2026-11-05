@@ -24,7 +24,6 @@ let showCriticalSquares = false;
 const equivalence = {
     shapeText: "2, 1", k: 3,
     onlyMultiple: false,
-    showFinalBoards: false,
     maxBoardSize: 10, maxTableaux: 500, effort: 2_000_000,
     status: "Choose a shape and k to group its tableaux by starting position.",
     error: undefined,
@@ -221,11 +220,8 @@ function openLadderGame(rows, result, matchIndex, leafId, event) {
     state.playbackLeafId = leafId;
     if (event !== undefined)
         inspectTableauEvent(leafId, event);
-    else {
-        state.selectedNodeId = result.matches[matchIndex].tree.root.id;
-        render();
-        requestAnimationFrame(() => document.querySelector("#results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-    }
+    else
+        inspectLeaf(leafId);
 }
 function ladderOptions() {
     return {
@@ -1038,11 +1034,9 @@ function render() {
             tableauInput.status = "";
             render();
         },
-        onTrace: (index) => {
+        onTrace: (index, leafId) => {
             activateTableauMatch(index);
-            const leafId = tableauInput.match?.leafIds[0];
-            if (leafId !== undefined)
-                inspectLeaf(leafId);
+            inspectLeaf(leafId);
         },
     }));
     shell.append(createTableauLadders(ladderOptions()));
@@ -1050,8 +1044,6 @@ function render() {
         shapeText: equivalence.shapeText, k: equivalence.k, maxBoardSize: equivalence.maxBoardSize,
         onlyMultiple: equivalence.onlyMultiple,
         onOnlyMultipleChange: (checked) => { equivalence.onlyMultiple = checked; render(); },
-        showFinalBoards: equivalence.showFinalBoards,
-        onShowFinalBoardsChange: (checked) => { equivalence.showFinalBoards = checked; render(); },
         maxTableaux: equivalence.maxTableaux, effort: equivalence.effort,
         searching: equivalence.controller !== undefined, status: equivalence.status,
         ...(equivalence.error === undefined ? {} : { error: equivalence.error }),

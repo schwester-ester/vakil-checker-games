@@ -1,6 +1,7 @@
 import type { FilledTableau, TableauSearchResult } from "../math/inverseTableau.js";
 import { validateFilledTableau } from "../math/inverseTableau.js";
 import { formatSubset } from "../math/validation.js";
+import { boardMoveOptions } from "../math/moveArrows.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
 import { button, element, labelledControl } from "./dom.js";
 
@@ -23,7 +24,7 @@ export interface TableauInputOptions {
   readonly onSearch: () => void;
   readonly onCancel: () => void;
   readonly onExample: (rows: number[][]) => void;
-  readonly onTrace: (index: number) => void;
+  readonly onTrace: (index: number, leafId: string) => void;
 }
 
 export function createTableauInput(options: TableauInputOptions): HTMLElement {
@@ -31,7 +32,7 @@ export function createTableauInput(options: TableauInputOptions): HTMLElement {
   section.append(
     element("p", { className: "eyebrow", text: "Explore the bijection" }),
     element("h2", { className: "panel-title", text: "Start from a Young tableau", attributes: { id: "tableau-input-heading" } }),
-    element("p", { className: "tableau-input-intro", text: "Enter a straight Young diagram and its semistandard filling, in the same convention as Final Results: rows weakly increase and columns strictly increase. The app finds every possible starting position on the smallest checkerboard and generates all of their sibling games." }),
+    element("p", { className: "tableau-input-intro", text: "Enter a straight Young diagram and its semistandard filling, in the same convention as Final Results: rows weakly increase and columns strictly increase. The app finds every possible starting position on the smallest checkerboard and generates all of their sibling games. Matching games appear as final boards below, with all board display toggles available." }),
   );
   const setup = element("div", { className: "setup-controls" });
   const shape = element("input", { className: "subset-input", attributes: { value: options.shapeText, placeholder: "2, 1", "aria-label": "Tableau row lengths", type: "text" } });
@@ -105,9 +106,19 @@ export function createTableauInput(options: TableauInputOptions): HTMLElement {
       description.append(
         element("h4", { text: `Starting position ${index + 1} · ${tree.k} white checkers` }),
         element("p", { text: `A = ${formatSubset(tree.A)}; B = ${formatSubset(tree.B)}. ${tree.leaves.length} sibling game${tree.leaves.length === 1 ? "" : "s"} share this starting position.` }),
-        button("Trace the input tableau’s game", () => options.onTrace(index)),
       );
-      recovered.append(createCheckerBoard({ n: tree.n, black: tree.root.state.black, white: tree.root.state.white, pixelSize: 220 }), description);
+      const games = element("div", { className: "recovered-games" });
+      match.leafIds.forEach((leafId, gameIndex) => {
+        const leaf = tree.nodesById.get(leafId)!;
+        const game = element("figure", { className: "recovered-final-board", attributes: { "data-leaf-id": leafId } });
+        game.append(
+          createCheckerBoard({ n: tree.n, black: leaf.state.black, white: leaf.state.white, ...boardMoveOptions(tree, leaf), pixelSize: 220 }),
+          element("figcaption", { text: `Final state · matching game ${gameIndex + 1}` }),
+          button("Trace the input tableau’s game", () => options.onTrace(index, leafId)),
+        );
+        games.append(game);
+      });
+      recovered.append(description, games);
       section.append(recovered);
     });
   }

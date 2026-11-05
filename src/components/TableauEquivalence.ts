@@ -11,8 +11,6 @@ export interface TableauEquivalenceOptions {
   readonly k: number;
   readonly onlyMultiple: boolean;
   readonly onOnlyMultipleChange: (checked: boolean) => void;
-  readonly showFinalBoards: boolean;
-  readonly onShowFinalBoardsChange: (checked: boolean) => void;
   readonly maxBoardSize: number;
   readonly maxTableaux: number;
   readonly effort: number;
@@ -38,7 +36,7 @@ export function createTableauEquivalence(options: TableauEquivalenceOptions): HT
     element("p", { className: "eyebrow", text: "Group by starting position" }),
     element("h2", { className: "panel-title", text: "Equivalent tableaux", attributes: { id: "equivalence-heading" } }),
     element("p", { className: "tableau-input-intro", text: "Choose a shape and entry bound k. Every game here uses exactly k white checkers. Tableaux are grouped together only when they share a starting position on their own minimum checkerboard. Rows may have different board sizes. Click an entry to inspect its recording move, or explore a minimal starting position and its games." }),
-    element("p", { className: "field-help", text: "Every filling with entries 1,…,k is searched on increasing board sizes. A tableau appears only at its first matching size. Larger-board copies are excluded from the table. For fixed k, each tableau has one minimal starting position; different tableaux can share that position." }),
+    element("p", { className: "field-help", text: "Every filling with entries 1,…,k is searched on increasing board sizes. A tableau appears only at its first matching size. Larger-board copies are excluded from the table. For fixed k, each tableau has one minimal starting position; different tableaux can share that position. Each tableau is paired with its game's final board, with all board display toggles available." }),
   );
   const setup = element("div", { className: "setup-controls" });
   const shape = element("input", { className: "subset-input", attributes: { value: options.shapeText, type: "text", placeholder: "2, 1", "aria-label": "Equivalence tableau row lengths" } });
@@ -78,13 +76,6 @@ export function createTableauEquivalence(options: TableauEquivalenceOptions): HT
   const filter = element("label", { className: "toggle-control equivalence-filter" });
   filter.append(filterInput, element("span", { className: "toggle-track" }), element("span", { text: filterLabel }));
   output.append(filter);
-  const finalBoardLabel = "Show final game boards beside tableaux";
-  const finalBoardInput = element("input", { attributes: { type: "checkbox", "aria-label": finalBoardLabel } });
-  finalBoardInput.checked = options.showFinalBoards;
-  finalBoardInput.addEventListener("change", () => options.onShowFinalBoardsChange(finalBoardInput.checked));
-  const finalBoardToggle = element("label", { className: "toggle-control equivalence-filter" });
-  finalBoardToggle.append(finalBoardInput, element("span", { className: "toggle-track" }), element("span", { text: finalBoardLabel }));
-  output.append(finalBoardToggle);
   const visibleCount = result.rows.filter((row) => !options.onlyMultiple || row.tableaux.length > 1).length;
   output.append(element("p", { className: "results-meta", text: `Showing ${visibleCount} of ${result.rows.length} starting positions.` }));
   if (visibleCount === 0) {
@@ -107,7 +98,6 @@ export function createTableauEquivalence(options: TableauEquivalenceOptions): HT
     start.append(
       element("p", { text: `Start ${index + 1} · ${row.tree.n} × ${row.tree.n} (minimal)` }),
       element("p", { text: `A = ${formatSubset(row.tree.A)}; B = ${formatSubset(row.tree.B)}` }),
-      createCheckerBoard({ n: row.tree.n, black: row.tree.root.state.black, white: row.tree.root.state.white, showLabels: true, pixelSize: 160 }),
       button("Explore starting position", () => options.onStart(row), "button button--small"),
     );
     const cell = element("td");
@@ -117,14 +107,12 @@ export function createTableauEquivalence(options: TableauEquivalenceOptions): HT
       const tile = element("article", { className: "equivalence-tableau" });
       const pair = element("div", { className: "equivalence-tableau-pair" });
       pair.append(createTableau({ events: leaf.state.tableauEvents, rowCount: result.k, compact: true, onCellClick: (event) => options.onEvent(row, leafId, event) }));
-      if (options.showFinalBoards) {
-        const finalBoard = element("figure", { className: "equivalence-final-board", attributes: { "data-leaf-id": leafId } });
-        finalBoard.append(
-          createCheckerBoard({ n: row.tree.n, black: leaf.state.black, white: leaf.state.white, ...boardMoveOptions(row.tree, leaf), compact: true, showLabels: true, pixelSize: 160 }),
-          element("figcaption", { text: "Final state" }),
-        );
-        pair.append(finalBoard);
-      }
+      const finalBoard = element("figure", { className: "equivalence-final-board", attributes: { "data-leaf-id": leafId } });
+      finalBoard.append(
+        createCheckerBoard({ n: row.tree.n, black: leaf.state.black, white: leaf.state.white, ...boardMoveOptions(row.tree, leaf), compact: true, showLabels: true, pixelSize: 160 }),
+        element("figcaption", { text: "Final state" }),
+      );
+      pair.append(finalBoard);
       tile.append(pair, button("Trace this game", () => options.onGame(row, leafId), "button button--small"));
       tiles.append(tile);
     }
