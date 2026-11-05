@@ -23,7 +23,7 @@ The sticky **Show checker move arrows (all boards)** toggle beside **Only white 
 
 **Show final white checkers** is on by default. Turn it off to hide the white checkers on the main diagonal of final game boards, while still showing any enabled initial outlines, move arrows, and critical-square labels. This applies to all final boards, including those in the three tableau panels.
 
-**Show pipe dream** places the corresponding numbered pipe dream immediately beside each final checkerboard, including the tableau panels, Final Results, terminal tree nodes, and the inspector. It is reflected horizontally and vertically in the same board frame, with upright tableau entries replacing crosses. The faint curves are elbow tiles. Hover a numbered square to see its tableau box and recording step; hover the diagram to see its Grassmannian permutation. The alphabet bound is the game’s number of white checkers, including padded empty tableau rows. This toggle starts off and works independently of all checker overlays.
+**Show pipe dream** places the corresponding numbered pipe dream immediately beside each final checkerboard, including the tableau panels, Final Results, terminal tree nodes, and the inspector. The columns are reflected in the same board frame, with each upright tableau entry `t` in display row `t`. Noncrossing squares are blank. Hover a numbered square to see its tableau box and recording step; hover the diagram to see its Grassmannian permutation. The alphabet bound is the game’s number of white checkers, including padded empty tableau rows. This toggle starts off and works independently of all checker overlays.
 
 ## Start from a tableau
 

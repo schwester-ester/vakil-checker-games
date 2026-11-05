@@ -1474,7 +1474,6 @@ h1 {
 .checker-critical-square { fill: none; stroke: #52606d; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .checker-critical-entry { fill: #344054; stroke: #fff; stroke-width: 3; paint-order: stroke fill; stroke-linejoin: round; font-weight: 700; }
 .hide-final-white-checkers .checker-board--final .white-checker { display: none; }
-.pipe-dream-elbow { fill: none; stroke: #c8ced6; stroke-width: 1; }
 .pipe-dream-crossing-square { fill: #f0f6ff; stroke: #52606d; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .pipe-dream-entry { fill: #344054; font-weight: 700; }
 .pipe-dream-heading { fill: #626d76; font-weight: 650; }

@@ -18,7 +18,7 @@ function readPermutation(positions, n) {
 }
 const key = positions => positions.map(({ row, col }) => `${row},${col}`).sort().join(';');
 
-test('Grassmannian pipe dreams preserve entries, reduce to the correct permutation, and reflect both axes', () => {
+test('Grassmannian pipe dreams preserve entries, reduce to the correct permutation, and mirror columns with entry t in row t', () => {
   let checked = 0;
   for (const shape of [[], [1], [2], [1, 1], [2, 1], [2, 2], [3, 1], [3, 2, 1]]) {
     for (let k = Math.max(1, shape.length); k <= 5; k++) {
@@ -33,7 +33,8 @@ test('Grassmannian pipe dreams preserve entries, reduce to the correct permutati
         assert.deepEqual(descents, entries.length === 0 ? [] : [k]);
         assert.equal(dream.permutation.reduce((total, value, i) => total + dream.permutation.slice(i + 1).filter(other => other < value).length, 0), entries.length);
         reflected.forEach((crossing, i) => {
-          assert.equal(crossing.row + dream.crossings[i].row, dream.n + 1);
+          assert.equal(crossing.row, dream.crossings[i].row);
+          assert.equal(crossing.row, crossing.entry);
           assert.equal(crossing.col + dream.crossings[i].col, dream.n + 1);
           assert.equal(crossing.entry, dream.crossings[i].entry);
           assert.ok(crossing.row >= 1 && crossing.row <= dream.n && crossing.col >= 1 && crossing.col <= dream.n);
@@ -85,7 +86,7 @@ test('event labels stay attached to their tableau boxes; the ambient alphabet an
   assert.throws(() => pipeDreamFromTableau([[1, 1]], 2, 3), /board/);
 });
 
-test('each legal tableau increment moves exactly its numbered crossing one square northwest in the reflected view', () => {
+test('each legal tableau increment moves exactly its numbered crossing one square southwest in the reflected view', () => {
   const ladder = generateTableauLadder([2, 1], 3);
   const images = new Map(ladder.nodes.map(node => [node.id, reflectedPipeDreamCrossings(pipeDreamFromTableau(node.rows, 3))]));
   for (const edge of ladder.edges) {
@@ -93,7 +94,7 @@ test('each legal tableau increment moves exactly its numbered crossing one squar
     before.forEach((crossing, i) => {
       if (crossing.tableauRow === edge.row + 1 && crossing.tableauCol === edge.col + 1) {
         assert.equal(after[i].entry, crossing.entry + 1);
-        assert.equal(after[i].row, crossing.row - 1);
+        assert.equal(after[i].row, crossing.row + 1);
         assert.equal(after[i].col, crossing.col - 1);
       } else assert.deepEqual(after[i], crossing);
     });

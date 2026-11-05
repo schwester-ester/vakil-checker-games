@@ -5,7 +5,7 @@ export function createPipeDream(dream, cell, origin) {
     const total = boardSize + origin + 4;
     const svg = svgElement("svg", { class: "pipe-dream", viewBox: `0 0 ${total} ${total}`, width: total, height: total, role: "img", "aria-label": `Reflected numbered pipe dream for w = (${dream.permutation.join(", ")})` });
     const title = svgElement("title");
-    title.textContent = `Pipe dream · w = (${dream.permutation.join(", ")}). Reflected horizontally and vertically; each crossing is labeled with its tableau entry.`;
+    title.textContent = `Pipe dream · w = (${dream.permutation.join(", ")}). Each crossing is labeled with its tableau entry; noncrossing squares are blank.`;
     svg.append(title, svgElement("rect", { x: origin, y: origin, width: boardSize, height: boardSize, class: "board-background" }));
     for (let i = 0; i <= dream.n; i++) {
         svg.append(svgElement("line", { x1: origin, x2: origin + boardSize, y1: origin + i * cell, y2: origin + i * cell, class: "board-grid-line" }), svgElement("line", { x1: origin + i * cell, x2: origin + i * cell, y1: origin, y2: origin + boardSize, class: "board-grid-line" }));
@@ -16,19 +16,6 @@ export function createPipeDream(dream, cell, origin) {
         svg.append(heading);
     }
     const crossings = reflectedPipeDreamCrossings(dream);
-    const occupied = new Set(crossings.map(crossing => `${crossing.row},${crossing.col}`));
-    const elbows = svgElement("g", { class: "pipe-dream-elbows", "pointer-events": "none" });
-    for (let row = 1; row <= dream.n; row++)
-        for (let col = 1; col <= dream.n; col++) {
-            if (occupied.has(`${row},${col}`))
-                continue;
-            const x = origin + (col - 1) * cell, y = origin + (row - 1) * cell, half = cell / 2;
-            elbows.append(svgElement("path", {
-                d: `M ${x} ${y + half} Q ${x + half} ${y + half} ${x + half} ${y + cell} M ${x + half} ${y} Q ${x + half} ${y + half} ${x + cell} ${y + half}`,
-                class: "pipe-dream-elbow",
-            }));
-        }
-    svg.append(elbows);
     for (const crossing of crossings) {
         const group = svgElement("g", { class: "pipe-dream-crossing", "data-row": crossing.row, "data-col": crossing.col, "data-tableau-row": crossing.tableauRow, "data-tableau-col": crossing.tableauCol, ...(crossing.event === undefined ? {} : { "data-step": crossing.event.step }) });
         const tooltip = svgElement("title");

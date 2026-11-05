@@ -33,8 +33,10 @@ export function pipeDreamFromEvents(events, k, n) {
         })),
     };
 }
-/** Horizontal then vertical reflection in the full n × n checkerboard frame. */
+/** Mirror columns in the n × n frame, keeping entry t in display row t.
+ * This flips the previous two-axis-reflected display vertically.
+ */
 export function reflectedPipeDreamCrossings(dream) {
-    return dream.crossings.map(crossing => ({ ...crossing, row: dream.n + 1 - crossing.row, col: dream.n + 1 - crossing.col }));
+    return dream.crossings.map(crossing => ({ ...crossing, col: dream.n + 1 - crossing.col }));
 }
 //# sourceMappingURL=pipeDream.js.map

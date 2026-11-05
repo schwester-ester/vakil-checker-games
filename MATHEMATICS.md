@@ -144,6 +144,6 @@ We use the diagonal convention of [Knutson–Miller–Yong, Proposition 5.3](htt
 
 For shape `lambda` padded to `k` rows, the Grassmannian permutation in `S_n` starts with `w(i)=i+lambda_(k+1-i)` for `1 <= i <= k`; append the unused values in increasing order. We use the actual game's `k` and `n`, even when its largest tableau entry is smaller than `k`. The empty shape gives the identity.
 
-The website reflects both axes of the full `n × n` frame, sending a crossing to `(n+1-t,n+1-t-b+a)`. It draws the original entry `t` upright in this square instead of a cross. Event identity stays attached to the tableau box, independently of its visual reflection. Every final board has its own diagram; intermediate boards do not display a partially completed pipe dream.
+The website mirrors columns in the full `n × n` frame, sending a crossing to `(t,n+1-t-b+a)`. This is a vertical flip of the original two-axis-reflected display: entry `t` now appears in row `t`. It draws the original entry upright instead of a cross and leaves noncrossing squares blank, without elbow tiles. Event identity stays attached to the tableau box, independently of its visual reflection. Every final board has its own diagram; intermediate boards do not display a partially completed pipe dream.
 
 Regression tests independently read reduced words, verify crossing counts against permutation length and tableau weights, and compare the eight tableaux of shape `(2,1)` over `[3]` with an exhaustive enumeration of all reduced pipe dreams for `w=13524`.
