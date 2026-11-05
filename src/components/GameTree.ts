@@ -1,3 +1,4 @@
+import { boardMoveOptions } from "../math/moveArrows.js";
 import type { GameNode, GameTree } from "../math/types.js";
 import { pathToNode } from "../math/generateGames.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
@@ -76,6 +77,7 @@ function buildLayout(root: GameNode, collapsed: ReadonlySet<string>): {
 }
 
 function drawNode(
+  tree: GameTree,
   layout: LayoutNode,
   selectedNodeId: string,
   highlightedIds: ReadonlySet<string>,
@@ -123,6 +125,7 @@ function drawNode(
     n: node.state.n,
     black: node.state.black,
     white: node.state.white,
+    ...boardMoveOptions(tree, node),
     compact: true,
     showLabels: false,
     pixelSize: 102,
@@ -241,6 +244,7 @@ export function createGameTree(options: GameTreeOptions): HTMLElement {
   for (const node of layout.all) {
     transformGroup.append(
       drawNode(
+        options.tree,
         node,
         options.selectedNodeId,
         highlightedIds,

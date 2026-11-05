@@ -110,7 +110,21 @@ The implementation uses a breadth-first traversal, keyed by the full tableau sha
 
 Each vertex independently uses the exhaustive minimum-board inverse above. All matching checker-game paths on all minimal starting positions are shown under that tableau. The chosen game's stored Section 2.6 events supply the tableau-cell interactions, so a click always traces an actual recording move. Every matching start's full sibling tree remains available in the common checker-game explorer. Completed correspondences may be shared between identical tableaux in different comparison panels; failed or interrupted searches remain explicitly labeled.
 
+## Tableaux grouped by minimal starting position
+
+The equivalence-table section fixes the alphabet `{1,...,k}` and exactly `k` white checkers throughout. This includes fillings with largest entry smaller than `k`. It first constructs the complete set of semistandard fillings using the ladder enumeration above.
+
+For a board `n >= k+beta_1`, shape determines `B_i=n-k+i-beta_i`, padding `beta` with zeros. Enumerate every happy initial `A` and every leaf of `generateGameTree(n,A,B)` in increasing board sizes. Record the first board size for each tableau in a minimum-size map. A leaf enters its starting-position row only if its board equals that tableau's recorded minimum. Keep every such leaf at that size, including those from later starts on the same board. Omit starts that have no minimal leaves. Deduplicate tableau values within each row while retaining individual game IDs for tracing.
+
+**Minimality proof.** Every game recording the requested shape with exactly `k` checkers occurs in this enumeration: boards below `k+beta_1` cannot fit the shape, and `B` is uniquely determined at each remaining size. Since all smaller boards have been exhausted when a tableau is first encountered, that encounter establishes its minimum size. Completing every start on that board finds every minimal start for it. Entries encountered on larger boards are excluded. Once every filling has a recorded minimum, finish enumerating that entire board before returning the accumulated rows from all sizes. Thus every listed board is minimal for each tableau in its row, and all minimal starts are retained.
+
+Rows group tableaux sharing a minimal start `(n,A,B)`, not just any start. The dominance argument in [INVERSE_RESEARCH.md](INVERSE_RESEARCH.md) establishes that for fixed `k` each tableau has a unique minimal starting position, so these minimum-start groups do not overlap. Boards and column subsets can differ between rows. The empty shape's minimum board is `n=k`, with one start containing all `k` white checkers on the black checkers. A retained tree can contain nonminimal sibling leaves; the equivalence table filters them out, while the inspector and Final Results preserve the full tree for exploration.
+
+As in the inverse search, cancellation and resource limits abort the whole analysis. A partial list of starting positions is never returned as complete. Regression tests build an independent database of both `A` and `B` across several board sizes, compute each tableau's minimum, and compare every row and game with that database. They also verify that larger-board Figure 7 copies and nonminimal siblings are excluded while exactly `k` checkers are used even for smaller-entry fillings.
+
 ## Regression checks
+
+The additional inverse investigation in [INVERSE_RESEARCH.md](INVERSE_RESEARCH.md) derives a minimum-start formula from tableau dominance and tests an experimental local stay/swap rule. It supplies a proven inverse using the forward tree at one computed start, and a separately labeled conjectural inverse that follows one path without generating siblings. The website continues using its exhaustive algorithms.
 
 The test suite verifies:
 

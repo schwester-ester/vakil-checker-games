@@ -27,10 +27,111 @@ import {
 import { button, element, labelledControl } from "./components/dom.js";
 import { createTableauInput } from "./components/TableauInput.js";
 import { findMinimalTableauGames, type TableauMatch, type TableauSearchResult } from "./math/inverseTableau.js";
-import { createCheckerBoard } from "./components/CheckerBoard.js";
+import { createCheckerBoard, setCheckerMoveArrowsVisible } from "./components/CheckerBoard.js";
 import { formatSubset } from "./math/validation.js";
 import { generateTableauLadder, parseTableauShape } from "./math/tableauLadder.js";
 import { createLadderNodeContent, createTableauLadders, type ShapeAnalysis, type TableauLaddersOptions } from "./components/TableauLadders.js";
+import { generateEquivalenceTable, type EquivalenceTable, type EquivalenceRow } from "./math/tableauEquivalence.js";
+import { createTableauEquivalence } from "./components/TableauEquivalence.js";
+import { tableauFromEvents, tableauValues } from "./math/tableau.js";
+import { boardMoveOptions } from "./math/moveArrows.js";
+
+let onlyWhiteCheckers = false;
+let showMoveArrows = false;
+
+const equivalence = {
+  shapeText: "2, 1", k: 3,
+  onlyMultiple: false,
+  showFinalBoards: false,
+  maxBoardSize: 10, maxTableaux: 500, effort: 2_000_000,
+  status: "Choose a shape and k to group its tableaux by starting position.",
+  error: undefined as string | undefined,
+  result: undefined as EquivalenceTable | undefined,
+  controller: undefined as AbortController | undefined,
+};
+
+function cancelEquivalence(): void {
+  equivalence.controller?.abort();
+  equivalence.controller = undefined;
+}
+
+function invalidateEquivalence(): void {
+  cancelEquivalence();
+  equivalence.result = undefined;
+  equivalence.error = undefined;
+  equivalence.status = "Input changed. Generate to update the equivalence table.";
+  document.querySelector("#tableau-equivalence .equivalence-output")?.remove();
+  document.querySelector("#tableau-equivalence .generation-error")?.remove();
+  const status = document.querySelector("#equivalence-status");
+  if (status !== null) status.textContent = equivalence.status;
+}
+
+async function analyzeEquivalence(): Promise<void> {
+  cancelEquivalence();
+  const controller = new AbortController();
+  equivalence.controller = controller;
+  equivalence.error = undefined;
+  equivalence.result = undefined;
+  equivalence.status = "Enumerating starting positions and their checker games…";
+  render();
+  try {
+    const result = await generateEquivalenceTable(parseTableauShape(equivalence.shapeText), equivalence.k, {
+      maxBoardSize: equivalence.maxBoardSize,
+      maxTableaux: equivalence.maxTableaux,
+      maxTotalNodes: equivalence.effort,
+      maxNodesPerTree: tableauInput.maxTreeNodes,
+      signal: controller.signal,
+      onProgress: (n, starts, covered, total) => {
+        equivalence.status = `Board n=${n} · ${starts} starting positions checked · ${covered}/${total} tableaux represented`;
+        const status = document.querySelector("#equivalence-status");
+        if (status !== null) status.textContent = equivalence.status;
+      },
+    });
+    if (controller.signal.aborted) return;
+    equivalence.result = result;
+    equivalence.status = `Complete table: ${result.rows.length} minimal starting positions on boards n=${result.minBoardSize}–${result.maxBoardSize}, exactly ${result.k} white checkers each.`;
+  } catch (error) {
+    if (controller.signal.aborted) return;
+    equivalence.error = error instanceof BranchLimitError
+      ? "A candidate exceeded the search-state or individual-tree limit. Raise the limits and retry; no partial table is shown."
+      : error instanceof Error ? error.message : "Equivalence analysis failed.";
+    equivalence.status = "Analysis stopped without a complete table.";
+  } finally {
+    if (equivalence.controller === controller) { equivalence.controller = undefined; render(); }
+  }
+}
+
+function openEquivalenceGame(row: EquivalenceRow, leafId?: string, event?: TableauEvent): void {
+  cancelTableauSearch();
+  stopPlayback();
+  const tree = row.tree;
+  const id = leafId ?? row.tableaux[0]!.leafIds[0]!;
+  const leaf = tree.nodesById.get(id)!;
+  tableauInput.result = undefined;
+  tableauInput.match = { tree, leafIds: [id] };
+  tableauInput.rows = tableauValues(tableauFromEvents(leaf.state.tableauEvents, tree.k)).filter((entries) => entries.length > 0);
+  tableauInput.shapeText = tableauInput.rows.map((entries) => entries.length).join(", ");
+  tableauInput.shapeValid = true;
+  tableauInput.error = undefined;
+  tableauInput.status = `Selected game from its minimal starting board n=${tree.n}, with exactly ${tree.k} white checkers. Final Results shows all siblings, including those that may have smaller boards elsewhere.`;
+  state.n = tree.n;
+  state.k = tree.k;
+  state.white = initialWhiteConfiguration(tree.A, tree.B);
+  state.subsetA = formatSubsetText(tree.A);
+  state.subsetB = formatSubsetText(tree.B);
+  state.tree = tree;
+  state.view = "flow";
+  state.selectedNodeId = leafId === undefined ? tree.root.id : id;
+  state.playbackLeafId = id;
+  state.collapsed = new Set();
+  state.flowTransform = { scale: tree.nodeCount > 100 ? 0.35 : 0.7, x: 28, y: 28 };
+  state.generationError = undefined;
+  if (event !== undefined) inspectTableauEvent(id, event);
+  else {
+    render();
+    requestAnimationFrame(() => document.querySelector("#results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+}
 
 let nextShapeId = 2;
 const ladders = {
@@ -807,6 +908,7 @@ function createResults(tree: GameTree): HTMLElement {
     }),
     createGameInspector({
       node: selectedNode(tree),
+      ...boardMoveOptions(tree, selectedNode(tree)),
       totalSteps: tree.schedule.length,
       showAnnotations: state.showAnnotations,
       debug: state.debug,
@@ -871,6 +973,7 @@ function createHeader(): HTMLElement {
     attributes: { href: "#tableau-input" },
   }));
   inputLinks.append(element("a", { className: "button", text: "Compare tableau ladders", attributes: { href: "#tableau-ladders" } }));
+  inputLinks.append(element("a", { className: "button", text: "Equivalent tableaux", attributes: { href: "#tableau-equivalence" } }));
   title.append(inputLinks);
   const verification = element("div", { className: "verification-badge" });
   verification.append(
@@ -886,8 +989,24 @@ function createHeader(): HTMLElement {
 function render(): void {
   const ladderScrolls = new Map([...document.querySelectorAll<HTMLElement>("[data-ladder-viewport]")].map((viewport) => [viewport.dataset.ladderViewport, { x: viewport.scrollLeft, y: viewport.scrollTop }]));
   app.replaceChildren();
-  const shell = element("div", { className: "app-shell" });
+  const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}` });
   shell.append(createHeader());
+  const boardDisplay = element("div", { className: "board-display-options", attributes: { "aria-label": "Board display options" } });
+  boardDisplay.append(checkboxControl("Only white checkers (all boards)", onlyWhiteCheckers, (checked) => {
+    onlyWhiteCheckers = checked;
+    shell.classList.toggle("white-checkers-only", checked);
+  }));
+  boardDisplay.append(checkboxControl("Show checker move arrows (all boards)", showMoveArrows, (checked) => {
+    showMoveArrows = checked;
+    setCheckerMoveArrowsVisible(checked);
+    shell.classList.toggle("show-move-arrows", checked);
+  }));
+  const arrowLegend = element("div", { className: "move-arrow-legend", attributes: { "aria-label": "Checker move arrow colors" } });
+  for (const [kind, label] of [["swap", "Swap + cleanup"], ["west", "West slide"], ["north", "North slide · tableau entry"]]) {
+    arrowLegend.append(element("span", { className: `move-arrow-key move-arrow--${kind}`, text: `➜ ${label}` }));
+  }
+  boardDisplay.append(arrowLegend);
+  shell.append(boardDisplay);
 
   const diagnostics = state.inputMode === "subsets" ? subsetDiagnostics() : { errors: [] as string[] };
   const validation = validateInitialWhite(state.n, state.k, state.white);
@@ -1003,6 +1122,40 @@ function render(): void {
     },
   }));
   shell.append(createTableauLadders(ladderOptions()));
+  shell.append(createTableauEquivalence({
+    shapeText: equivalence.shapeText, k: equivalence.k, maxBoardSize: equivalence.maxBoardSize,
+    onlyMultiple: equivalence.onlyMultiple,
+    onOnlyMultipleChange: (checked) => { equivalence.onlyMultiple = checked; render(); },
+    showFinalBoards: equivalence.showFinalBoards,
+    onShowFinalBoardsChange: (checked) => { equivalence.showFinalBoards = checked; render(); },
+    maxTableaux: equivalence.maxTableaux, effort: equivalence.effort,
+    searching: equivalence.controller !== undefined, status: equivalence.status,
+    ...(equivalence.error === undefined ? {} : { error: equivalence.error }),
+    ...(equivalence.result === undefined ? {} : { result: equivalence.result }),
+    onShape: (text) => {
+      const input = document.querySelector<HTMLInputElement>('[aria-label="Equivalence tableau row lengths"]');
+      const cursor = input?.selectionStart ?? text.length;
+      equivalence.shapeText = text;
+      invalidateEquivalence();
+      render();
+      const next = document.querySelector<HTMLInputElement>('[aria-label="Equivalence tableau row lengths"]');
+      next?.focus();
+      next?.setSelectionRange(cursor, cursor);
+    },
+    onK: (value) => { equivalence.k = value; invalidateEquivalence(); },
+    onMaxBoard: (value) => { equivalence.maxBoardSize = value; },
+    onMaxTableaux: (value) => { equivalence.maxTableaux = value; },
+    onEffort: (value) => { equivalence.effort = value; },
+    onGenerate: () => { void analyzeEquivalence(); },
+    onCancel: () => {
+      cancelEquivalence();
+      equivalence.status = "Analysis cancelled. Generate again to build a complete table.";
+      render();
+    },
+    onStart: (row) => openEquivalenceGame(row),
+    onGame: (row, leafId) => openEquivalenceGame(row, leafId),
+    onEvent: (row, leafId, event) => openEquivalenceGame(row, leafId, event),
+  }));
   if (state.tree !== undefined) shell.append(createResults(state.tree));
   shell.append(createHowItWorks());
 
@@ -1023,5 +1176,5 @@ function render(): void {
   }
 }
 
-window.addEventListener("beforeunload", () => { stopPlayback(); cancelTableauSearch(); cancelLadderAnalysis(); });
+window.addEventListener("beforeunload", () => { stopPlayback(); cancelTableauSearch(); cancelLadderAnalysis(); cancelEquivalence(); });
 render();

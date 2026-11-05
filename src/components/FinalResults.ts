@@ -1,3 +1,4 @@
+import { boardMoveOptions } from "../math/moveArrows.js";
 import type { GameNode, GameTree, TableauEvent } from "../math/types.js";
 import {
   formalOutput,
@@ -53,6 +54,7 @@ function gameCard(
       n: tree.n,
       black: leaf.state.black,
       white: leaf.state.white,
+      ...boardMoveOptions(tree, leaf),
       pixelSize: Math.min(280, tree.n * 34 + 34),
       showLabels: true,
     }),

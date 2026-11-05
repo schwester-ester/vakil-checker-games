@@ -1,3 +1,4 @@
+import { boardMoveOptions } from "../math/moveArrows.js";
 import { formalOutput, groupLeavesByOutput, outputSubset, } from "../math/generateGames.js";
 import { formatPartition, formatSubset, partitionFromSubset, } from "../math/validation.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
@@ -21,6 +22,7 @@ function gameCard(tree, leaf, gameNumber, onInspectLeaf, onTableauEvent, inputLe
         n: tree.n,
         black: leaf.state.black,
         white: leaf.state.white,
+        ...boardMoveOptions(tree, leaf),
         pixelSize: Math.min(280, tree.n * 34 + 34),
         showLabels: true,
     }), element("figcaption", { text: `λ(S) = ${formatPartition(gamma)}` }));

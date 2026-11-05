@@ -1,5 +1,14 @@
 import { positionKey } from "../math/positions.js";
 import { svgElement } from "./dom.js";
+let nextArrowBoardId = 0;
+let moveArrowsVisible = false;
+const arrowColors = { swap: "#a044c2", west: "#d06410", north: "#007fa3" };
+export function setCheckerMoveArrowsVisible(visible) {
+    moveArrowsVisible = visible;
+    for (const overlay of document.querySelectorAll(".checker-move-arrows")) {
+        overlay.style.display = visible ? "inline" : "none";
+    }
+}
 export function createCheckerBoard(options) {
     const cell = options.compact ? 18 : 34;
     const labelMargin = options.showLabels === false ? 3 : options.compact ? 15 : 24;
@@ -121,6 +130,73 @@ export function createCheckerBoard(options) {
             r: cell * 0.17,
             class: classNames.join(" "),
         }));
+    }
+    if (options.movePaths !== undefined || (options.moveArrows !== undefined && options.moveArrows.length > 0)) {
+        const arrows = svgElement("g", { class: "checker-move-arrows", "pointer-events": "none" });
+        arrows.style.display = moveArrowsVisible ? "inline" : "none";
+        const defs = svgElement("defs");
+        const boardId = nextArrowBoardId++;
+        for (const kind of ["swap", "west", "north"]) {
+            const marker = svgElement("marker", {
+                id: `checker-arrow-${boardId}-${kind}`, viewBox: "0 0 8 8", refX: 7, refY: 4,
+                markerWidth: 5, markerHeight: 5, orient: "auto", markerUnits: "strokeWidth",
+            });
+            marker.append(svgElement("path", { d: "M 0 0 L 8 4 L 0 8 Z", fill: arrowColors[kind], class: `move-arrow-head move-arrow--${kind}` }));
+            defs.append(marker);
+        }
+        arrows.append(defs);
+        const routes = options.movePaths?.map((route) => {
+            const group = svgElement("g", { class: "checker-route", "data-checker-index": route.checkerIndex });
+            const title = svgElement("title");
+            title.textContent = `White checker ${route.checkerIndex + 1}: (${route.start.row},${route.start.col}) → (${route.end.row},${route.end.col})${route.moves.length === 0 ? " (stationary)" : ""}`;
+            group.append(title, svgElement("circle", {
+                cx: origin + (route.start.col - 0.5) * cell,
+                cy: origin + (route.start.row - 0.5) * cell,
+                r: cell * 0.08,
+                class: "checker-route-start",
+                fill: "#fff", stroke: "#52606d", "stroke-width": 1,
+            }));
+            arrows.append(group);
+            return { moves: route.moves, group, continuous: true };
+        }) ?? [{ moves: options.moveArrows ?? [], group: arrows, continuous: false }];
+        for (const route of routes)
+            for (const [moveIndex, arrow] of route.moves.entries()) {
+                const points = arrow.points.map(({ row, col }) => ({ x: origin + (col - 0.5) * cell, y: origin + (row - 0.5) * cell }));
+                const first = points[0];
+                const last = points[points.length - 1];
+                const next = points[1];
+                const previous = points[points.length - 2];
+                // Leave the checker centers visible, with the tip beside the destination.
+                const inset = cell * 0.23;
+                const towards = (a, b, distance) => {
+                    const length = Math.hypot(b.x - a.x, b.y - a.y);
+                    return { x: a.x + (b.x - a.x) * distance / length, y: a.y + (b.y - a.y) * distance / length };
+                };
+                const start = route.continuous ? first : towards(first, next, inset);
+                const end = route.continuous && moveIndex < route.moves.length - 1 ? last : towards(last, previous, inset);
+                let d = `M ${start.x} ${start.y}`;
+                for (let index = 1; index < points.length - 1; index += 1) {
+                    const corner = points[index];
+                    const before = points[index - 1];
+                    const after = points[index + 1];
+                    const radius = Math.min(cell * 0.22, Math.hypot(corner.x - before.x, corner.y - before.y) * 0.25, Math.hypot(after.x - corner.x, after.y - corner.y) * 0.25);
+                    const entry = towards(corner, before, radius);
+                    const exit = towards(corner, after, radius);
+                    d += ` L ${entry.x} ${entry.y} Q ${corner.x} ${corner.y} ${exit.x} ${exit.y}`;
+                }
+                d += ` L ${end.x} ${end.y}`;
+                const path = svgElement("path", {
+                    d, class: `checker-move-arrow move-arrow--${arrow.kind}`,
+                    fill: "none", stroke: arrowColors[arrow.kind], "stroke-width": 1.8,
+                    "stroke-linecap": "round", "stroke-linejoin": "round",
+                    "marker-end": `url(#checker-arrow-${boardId}-${arrow.kind})`,
+                });
+                const title = svgElement("title");
+                title.textContent = `Step ${arrow.step}: ${arrow.kind === "swap" ? "swap (including cleanup)" : arrow.kind === "west" ? "west slide" : "north slide (tableau entry)"}; ${arrow.points.map(({ row, col }) => `(${row},${col})`).join(" → ")}`;
+                path.append(title);
+                route.group.append(path);
+            }
+        svg.append(arrows);
     }
     if (options.interactive === true && options.onToggleWhite !== undefined) {
         for (let row = 1; row <= options.n; row += 1) {

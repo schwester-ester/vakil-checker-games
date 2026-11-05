@@ -29,14 +29,14 @@ export function filledTableauKey(rows: FilledTableau): string {
   return JSON.stringify(normalized);
 }
 
-function* subsets(n: number, k: number, start = 1, prefix: number[] = []): Generator<number[]> {
+export function* enumerateSubsets(n: number, k: number, start = 1, prefix: number[] = []): Generator<number[]> {
   if (prefix.length === k) {
     yield [...prefix];
     return;
   }
   for (let value = start; value <= n - (k - prefix.length) + 1; value += 1) {
     prefix.push(value);
-    yield* subsets(n, k, value + 1, prefix);
+    yield* enumerateSubsets(n, k, value + 1, prefix);
     prefix.pop();
   }
 }
@@ -106,7 +106,7 @@ export async function findMinimalTableauGames(
     checkCancelled();
     for (let k = minK; k <= n - width; k += 1) {
       const B = Array.from({ length: k }, (_, i) => n - k + i + 1 - (shape[i] ?? 0));
-      for (const A of subsets(n, k)) {
+      for (const A of enumerateSubsets(n, k)) {
         checkCancelled();
         if (performance.now() - lastYield > 25) {
           options.onProgress?.(n, candidates);

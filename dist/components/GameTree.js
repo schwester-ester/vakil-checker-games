@@ -1,3 +1,4 @@
+import { boardMoveOptions } from "../math/moveArrows.js";
 import { pathToNode } from "../math/generateGames.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
 import { button, element, svgElement } from "./dom.js";
@@ -40,7 +41,7 @@ function buildLayout(root, collapsed) {
         height: Math.max(400, maxY),
     };
 }
-function drawNode(layout, selectedNodeId, highlightedIds, collapsed, onSelect, onToggleCollapsed) {
+function drawNode(tree, layout, selectedNodeId, highlightedIds, collapsed, onSelect, onToggleCollapsed) {
     const { node } = layout;
     const group = svgElement("g", {
         class: [
@@ -77,6 +78,7 @@ function drawNode(layout, selectedNodeId, highlightedIds, collapsed, onSelect, o
         n: node.state.n,
         black: node.state.black,
         white: node.state.white,
+        ...boardMoveOptions(tree, node),
         compact: true,
         showLabels: false,
         pixelSize: 102,
@@ -181,7 +183,7 @@ export function createGameTree(options) {
         }
     }
     for (const node of layout.all) {
-        transformGroup.append(drawNode(node, options.selectedNodeId, highlightedIds, options.collapsed, options.onSelect, options.onToggleCollapsed));
+        transformGroup.append(drawNode(options.tree, node, options.selectedNodeId, highlightedIds, options.collapsed, options.onSelect, options.onToggleCollapsed));
     }
     let current = { ...options.transform };
     const applyTransform = () => {

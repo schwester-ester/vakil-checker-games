@@ -1,3 +1,4 @@
+import type { CheckerMoveArrow, CheckerPath } from "../math/moveArrows.js";
 import type { GameNode, Position } from "../math/types.js";
 import { formatPosition } from "../math/positions.js";
 import { createCheckerBoard } from "./CheckerBoard.js";
@@ -8,6 +9,8 @@ export interface GameInspectorOptions {
   readonly totalSteps: number;
   readonly showAnnotations: boolean;
   readonly debug: boolean;
+  readonly moveArrows?: readonly CheckerMoveArrow[];
+  readonly movePaths?: readonly CheckerPath[];
 }
 
 function positionList(positions: readonly Position[]): string {
@@ -48,6 +51,7 @@ export function createGameInspector(options: GameInspectorOptions): HTMLElement 
         n: options.node.state.n,
         black: options.node.state.black,
         white: options.node.state.white,
+        ...(options.movePaths === undefined ? {} : { movePaths: options.movePaths }),
         pixelSize: 300,
         showLabels: true,
       }),
@@ -80,6 +84,8 @@ export function createGameInspector(options: GameInspectorOptions): HTMLElement 
       n: options.node.state.n,
       black: options.node.state.black,
       white: options.node.state.white,
+      ...(options.moveArrows === undefined ? {} : { moveArrows: options.moveArrows }),
+      ...(options.movePaths === undefined ? {} : { movePaths: options.movePaths }),
       pixelSize: 250,
       showLabels: true,
     }),

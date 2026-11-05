@@ -28,6 +28,7 @@ export function createGameInspector(options) {
             n: options.node.state.n,
             black: options.node.state.black,
             white: options.node.state.white,
+            ...(options.movePaths === undefined ? {} : { movePaths: options.movePaths }),
             pixelSize: 300,
             showLabels: true,
         }), element("p", {
@@ -53,6 +54,8 @@ export function createGameInspector(options) {
         n: options.node.state.n,
         black: options.node.state.black,
         white: options.node.state.white,
+        ...(options.moveArrows === undefined ? {} : { moveArrows: options.moveArrows }),
+        ...(options.movePaths === undefined ? {} : { movePaths: options.movePaths }),
         pixelSize: 250,
         showLabels: true,
     }), element("figcaption", { text: "After Phase 2" }));
