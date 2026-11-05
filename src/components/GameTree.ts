@@ -12,6 +12,7 @@ export interface FlowTransform {
 
 export interface GameTreeOptions {
   readonly tree: GameTree;
+  readonly showPipeDream: boolean;
   readonly selectedNodeId: string;
   readonly collapsed: ReadonlySet<string>;
   readonly transform: FlowTransform;
@@ -31,11 +32,10 @@ interface LayoutNode {
 
 const NODE_WIDTH = 142;
 const NODE_HEIGHT = 142;
-const HORIZONTAL_SPACING = 176;
 const VERTICAL_SPACING = 174;
 const TOP_MARGIN = 90;
 
-function buildLayout(root: GameNode, collapsed: ReadonlySet<string>): {
+function buildLayout(root: GameNode, collapsed: ReadonlySet<string>, nodeWidth: number): {
   root: LayoutNode;
   all: LayoutNode[];
   width: number;
@@ -49,7 +49,7 @@ function buildLayout(root: GameNode, collapsed: ReadonlySet<string>): {
     const visibleChildren = visibleSource.map(visit);
     let x: number;
     if (visibleChildren.length === 0) {
-      x = leafIndex * HORIZONTAL_SPACING + NODE_WIDTH / 2 + 30;
+      x = leafIndex * (nodeWidth + 34) + nodeWidth / 2 + 30;
       leafIndex += 1;
     } else {
       x =
@@ -66,7 +66,7 @@ function buildLayout(root: GameNode, collapsed: ReadonlySet<string>): {
   };
 
   const layoutRoot = visit(root);
-  const maxX = Math.max(...all.map(({ x }) => x)) + NODE_WIDTH / 2 + 40;
+  const maxX = Math.max(...all.map(({ x }) => x)) + nodeWidth / 2 + 40;
   const maxY = Math.max(...all.map(({ y }) => y)) + NODE_HEIGHT / 2 + 50;
   return {
     root: layoutRoot,
@@ -78,6 +78,8 @@ function buildLayout(root: GameNode, collapsed: ReadonlySet<string>): {
 
 function drawNode(
   tree: GameTree,
+  nodeWidth: number,
+  showPipeDream: boolean,
   layout: LayoutNode,
   selectedNodeId: string,
   highlightedIds: ReadonlySet<string>,
@@ -94,7 +96,7 @@ function drawNode(
     ]
       .filter(Boolean)
       .join(" "),
-    transform: `translate(${layout.x - NODE_WIDTH / 2} ${layout.y - NODE_HEIGHT / 2})`,
+    transform: `translate(${layout.x - nodeWidth / 2} ${layout.y - NODE_HEIGHT / 2})`,
     role: "button",
     tabindex: "0",
     "aria-label": `Checker state at step ${node.state.step}`,
@@ -103,7 +105,7 @@ function drawNode(
     svgElement("rect", {
       x: 0,
       y: 0,
-      width: NODE_WIDTH,
+      width: nodeWidth,
       height: NODE_HEIGHT,
       rx: 10,
       class: "flow-node-card",
@@ -130,16 +132,17 @@ function drawNode(
     showLabels: false,
     pixelSize: 102,
   });
-  board.setAttribute("x", "20");
+  const boardWidth = showPipeDream && node.state.step === tree.schedule.length ? 214 : 102;
+  board.setAttribute("x", String((nodeWidth - boardWidth) / 2));
   board.setAttribute("y", "25");
-  board.setAttribute("width", "102");
+  board.setAttribute("width", String(boardWidth));
   board.setAttribute("height", "102");
   board.setAttribute("pointer-events", "none");
   group.append(board);
 
   if (node.children.length > 1) {
     const badge = svgElement("g", {
-      transform: `translate(${NODE_WIDTH - 26} 8)`,
+      transform: `translate(${nodeWidth - 26} 8)`,
       class: "branch-badge",
     });
     badge.append(
@@ -159,7 +162,7 @@ function drawNode(
   if (node.children.length > 0) {
     const collapse = svgElement("g", {
       class: "collapse-control",
-      transform: `translate(${NODE_WIDTH / 2 - 10} ${NODE_HEIGHT - 16})`,
+      transform: `translate(${nodeWidth / 2 - 10} ${NODE_HEIGHT - 16})`,
       role: "button",
       tabindex: "0",
       "aria-label": collapsed.has(node.id) ? "Expand subtree" : "Collapse subtree",
@@ -212,7 +215,8 @@ export function createGameTree(options: GameTreeOptions): HTMLElement {
   svg.append(transformGroup);
   viewport.append(svg);
 
-  const layout = buildLayout(options.tree.root, options.collapsed);
+  const nodeWidth = options.showPipeDream ? 254 : NODE_WIDTH;
+  const layout = buildLayout(options.tree.root, options.collapsed, nodeWidth);
   const selectedPath = pathToNode(options.tree, options.selectedNodeId);
   const highlightedIds = new Set(selectedPath.map(({ id }) => id));
   const highlightedEdges = new Set(
@@ -245,6 +249,8 @@ export function createGameTree(options: GameTreeOptions): HTMLElement {
     transformGroup.append(
       drawNode(
         options.tree,
+        nodeWidth,
+        options.showPipeDream,
         node,
         options.selectedNodeId,
         highlightedIds,

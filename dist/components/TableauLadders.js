@@ -66,7 +66,7 @@ function createDiagram(shape, options) {
     const levels = [];
     for (const node of ladder.nodes)
         (levels[node.level] ??= []).push(node);
-    const cardWidth = Math.max(250, (ladder.shape[0] ?? 0) * 28 + 32);
+    const cardWidth = Math.max(options.showPipeDream ? 360 : 250, (ladder.shape[0] ?? 0) * 28 + 32);
     const cardHeight = 250 + Math.max(1, ladder.shape.length) * 28;
     const gapX = 100, gapY = 36;
     const width = levels.length * (cardWidth + gapX) + 32;

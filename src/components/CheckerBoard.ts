@@ -3,10 +3,17 @@ import { positionKey } from "../math/positions.js";
 import { svgElement } from "./dom.js";
 import type { CheckerMoveArrow, CheckerPath } from "../math/moveArrows.js";
 import type { BoardHistoryOptions } from "../math/boardHistory.js";
+import { createPipeDream } from "./PipeDream.js";
 
 let nextArrowBoardId = 0;
 let moveArrowsVisible = false;
+let pipeDreamsVisible = false;
 const arrowColors = { swap: "#a044c2", west: "#d06410", north: "#007fa3" };
+
+/** The page rerenders after changing this setting, including diagrams populated later. */
+export function setPipeDreamsVisible(visible: boolean): void {
+  pipeDreamsVisible = visible;
+}
 
 export function setCheckerMoveArrowsVisible(visible: boolean): void {
   moveArrowsVisible = visible;
@@ -40,13 +47,15 @@ export function createCheckerBoard(options: CheckerBoardOptions): SVGSVGElement 
   const labelMargin = options.showLabels === false ? 3 : options.compact ? 15 : 24;
   const boardSize = options.n * cell;
   const total = boardSize + labelMargin + 4;
+  const showPipeDream = pipeDreamsVisible && options.pipeDream !== undefined;
+  const fullWidth = showPipeDream ? total * 2 + 12 : total;
   const svg = svgElement("svg", {
     class: `checker-board${options.compact ? " checker-board--compact" : ""}${options.initialWhite !== undefined ? " checker-board--final" : ""}`,
-    viewBox: `0 0 ${total} ${total}`,
-    width: options.pixelSize ?? total,
+    viewBox: `0 0 ${fullWidth} ${total}`,
+    width: (options.pixelSize ?? total) * fullWidth / total,
     height: options.pixelSize ?? total,
     role: "img",
-    "aria-label": `${options.n} by ${options.n} checkerboard`,
+    "aria-label": `${options.n} by ${options.n} checkerboard${showPipeDream ? " beside its reflected numbered pipe dream" : ""}`,
   });
   const origin = labelMargin;
 
@@ -320,5 +329,11 @@ export function createCheckerBoard(options: CheckerBoardOptions): SVGSVGElement 
     }
   }
 
+  if (showPipeDream) {
+    const dream = createPipeDream(options.pipeDream!, cell, origin);
+    dream.setAttribute("x", String(total + 12));
+    svg.append(dream);
+    svg.classList.add("checker-board--with-pipe-dream");
+  }
   return svg;
 }

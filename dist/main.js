@@ -9,7 +9,7 @@ import { createInputPanel, } from "./components/InputPanel.js";
 import { button, element, labelledControl } from "./components/dom.js";
 import { createTableauInput } from "./components/TableauInput.js";
 import { findMinimalTableauGames } from "./math/inverseTableau.js";
-import { createCheckerBoard, setCheckerMoveArrowsVisible } from "./components/CheckerBoard.js";
+import { createCheckerBoard, setCheckerMoveArrowsVisible, setPipeDreamsVisible } from "./components/CheckerBoard.js";
 import { formatSubset } from "./math/validation.js";
 import { generateTableauLadder, parseTableauShape } from "./math/tableauLadder.js";
 import { createLadderNodeContent, createTableauLadders } from "./components/TableauLadders.js";
@@ -22,6 +22,7 @@ let showMoveArrows = false;
 let showInitialPositions = false;
 let showCriticalSquares = false;
 let showFinalWhiteCheckers = true;
+let showPipeDream = false;
 const equivalence = {
     shapeText: "2, 1", k: 3,
     onlyMultiple: false,
@@ -226,6 +227,7 @@ function openLadderGame(rows, result, matchIndex, leafId, event) {
 }
 function ladderOptions() {
     return {
+        showPipeDream,
         ...ladders,
         searching: ladders.controller !== undefined,
         onAdd: () => {
@@ -812,6 +814,7 @@ function createResults(tree) {
     const layout = element("div", { className: "flow-layout" });
     layout.append(createGameTree({
         tree,
+        showPipeDream,
         selectedNodeId: selectedNode(tree).id,
         collapsed: state.collapsed,
         transform: state.flowTransform,
@@ -899,7 +902,7 @@ function createHeader() {
 function render() {
     const ladderScrolls = new Map([...document.querySelectorAll("[data-ladder-viewport]")].map((viewport) => [viewport.dataset.ladderViewport, { x: viewport.scrollLeft, y: viewport.scrollTop }]));
     app.replaceChildren();
-    const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}${showInitialPositions ? " show-initial-positions" : ""}${showCriticalSquares ? " show-critical-squares" : ""}${showFinalWhiteCheckers ? "" : " hide-final-white-checkers"}` });
+    const shell = element("div", { className: `app-shell${onlyWhiteCheckers ? " white-checkers-only" : ""}${showMoveArrows ? " show-move-arrows" : ""}${showInitialPositions ? " show-initial-positions" : ""}${showCriticalSquares ? " show-critical-squares" : ""}${showFinalWhiteCheckers ? "" : " hide-final-white-checkers"}${showPipeDream ? " show-pipe-dream" : ""}` });
     shell.append(createHeader());
     const boardDisplay = element("div", { className: "board-display-options", attributes: { "aria-label": "Board display options" } });
     boardDisplay.append(checkboxControl("Only white checkers (all boards)", onlyWhiteCheckers, (checked) => {
@@ -922,6 +925,11 @@ function render() {
     boardDisplay.append(checkboxControl("Show final white checkers", showFinalWhiteCheckers, (checked) => {
         showFinalWhiteCheckers = checked;
         shell.classList.toggle("hide-final-white-checkers", !checked);
+    }));
+    boardDisplay.append(checkboxControl("Show pipe dream", showPipeDream, (checked) => {
+        showPipeDream = checked;
+        setPipeDreamsVisible(checked);
+        render();
     }));
     const arrowLegend = element("div", { className: "move-arrow-legend", attributes: { "aria-label": "Checker move arrow colors" } });
     for (const [kind, label] of [["swap", "Swap + cleanup"], ["west", "West slide"], ["north", "North slide · tableau entry"]]) {

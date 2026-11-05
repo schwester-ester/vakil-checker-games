@@ -136,3 +136,14 @@ The test suite verifies:
 - Figure 6: outputs `{2,3}` and `{1,4}`, with one-cell tableaux `2` and `1`;
 - Figure 7: `{2,3,4}+2{1,3,5}+{1,2,6}`, with four distinct paths;
 - every valid pair of initial subsets through `n=6` (622 generated games of inputs) satisfies the executable invariants.
+
+
+## Numbered pipe dreams
+
+We use the diagonal convention of [Knutson–Miller–Yong, Proposition 5.3](https://sites.math.duke.edu/~ezra/FlagTab/flagTab.pdf): a tableau entry `t` in box `(a,b)` gives a crossing at `(t,t+b-a)`, with rows and columns numbered from 1. Noncrossing tiles connect west to south and north to east. This convention makes crossing row equal tableau entry. To read the usual antidiagonal reduced word, flip the first `k` rows: the crossing becomes `(k+1-t,t+b-a)`, contributing `s_(k+b-a)`. Read rows top to bottom, right to left.
+
+For shape `lambda` padded to `k` rows, the Grassmannian permutation in `S_n` starts with `w(i)=i+lambda_(k+1-i)` for `1 <= i <= k`; append the unused values in increasing order. We use the actual game's `k` and `n`, even when its largest tableau entry is smaller than `k`. The empty shape gives the identity.
+
+The website reflects both axes of the full `n × n` frame, sending a crossing to `(n+1-t,n+1-t-b+a)`. It draws the original entry `t` upright in this square instead of a cross. Event identity stays attached to the tableau box, independently of its visual reflection. Every final board has its own diagram; intermediate boards do not display a partially completed pipe dream.
+
+Regression tests independently read reduced words, verify crossing counts against permutation length and tableau weights, and compare the eight tableaux of shape `(2,1)` over `[3]` with an exhaustive enumeration of all reduced pipe dreams for `w=13524`.

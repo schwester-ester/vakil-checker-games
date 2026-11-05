@@ -4,10 +4,9 @@ import { createCheckerBoard } from "./CheckerBoard.js";
 import { button, element, svgElement } from "./dom.js";
 const NODE_WIDTH = 142;
 const NODE_HEIGHT = 142;
-const HORIZONTAL_SPACING = 176;
 const VERTICAL_SPACING = 174;
 const TOP_MARGIN = 90;
-function buildLayout(root, collapsed) {
+function buildLayout(root, collapsed, nodeWidth) {
     let leafIndex = 0;
     const all = [];
     const visit = (node) => {
@@ -15,7 +14,7 @@ function buildLayout(root, collapsed) {
         const visibleChildren = visibleSource.map(visit);
         let x;
         if (visibleChildren.length === 0) {
-            x = leafIndex * HORIZONTAL_SPACING + NODE_WIDTH / 2 + 30;
+            x = leafIndex * (nodeWidth + 34) + nodeWidth / 2 + 30;
             leafIndex += 1;
         }
         else {
@@ -32,7 +31,7 @@ function buildLayout(root, collapsed) {
         return result;
     };
     const layoutRoot = visit(root);
-    const maxX = Math.max(...all.map(({ x }) => x)) + NODE_WIDTH / 2 + 40;
+    const maxX = Math.max(...all.map(({ x }) => x)) + nodeWidth / 2 + 40;
     const maxY = Math.max(...all.map(({ y }) => y)) + NODE_HEIGHT / 2 + 50;
     return {
         root: layoutRoot,
@@ -41,7 +40,7 @@ function buildLayout(root, collapsed) {
         height: Math.max(400, maxY),
     };
 }
-function drawNode(tree, layout, selectedNodeId, highlightedIds, collapsed, onSelect, onToggleCollapsed) {
+function drawNode(tree, nodeWidth, showPipeDream, layout, selectedNodeId, highlightedIds, collapsed, onSelect, onToggleCollapsed) {
     const { node } = layout;
     const group = svgElement("g", {
         class: [
@@ -51,7 +50,7 @@ function drawNode(tree, layout, selectedNodeId, highlightedIds, collapsed, onSel
         ]
             .filter(Boolean)
             .join(" "),
-        transform: `translate(${layout.x - NODE_WIDTH / 2} ${layout.y - NODE_HEIGHT / 2})`,
+        transform: `translate(${layout.x - nodeWidth / 2} ${layout.y - NODE_HEIGHT / 2})`,
         role: "button",
         tabindex: "0",
         "aria-label": `Checker state at step ${node.state.step}`,
@@ -59,7 +58,7 @@ function drawNode(tree, layout, selectedNodeId, highlightedIds, collapsed, onSel
     group.append(svgElement("rect", {
         x: 0,
         y: 0,
-        width: NODE_WIDTH,
+        width: nodeWidth,
         height: NODE_HEIGHT,
         rx: 10,
         class: "flow-node-card",
@@ -83,15 +82,16 @@ function drawNode(tree, layout, selectedNodeId, highlightedIds, collapsed, onSel
         showLabels: false,
         pixelSize: 102,
     });
-    board.setAttribute("x", "20");
+    const boardWidth = showPipeDream && node.state.step === tree.schedule.length ? 214 : 102;
+    board.setAttribute("x", String((nodeWidth - boardWidth) / 2));
     board.setAttribute("y", "25");
-    board.setAttribute("width", "102");
+    board.setAttribute("width", String(boardWidth));
     board.setAttribute("height", "102");
     board.setAttribute("pointer-events", "none");
     group.append(board);
     if (node.children.length > 1) {
         const badge = svgElement("g", {
-            transform: `translate(${NODE_WIDTH - 26} 8)`,
+            transform: `translate(${nodeWidth - 26} 8)`,
             class: "branch-badge",
         });
         badge.append(svgElement("circle", { cx: 9, cy: 9, r: 9, class: "branch-badge-circle" }));
@@ -108,7 +108,7 @@ function drawNode(tree, layout, selectedNodeId, highlightedIds, collapsed, onSel
     if (node.children.length > 0) {
         const collapse = svgElement("g", {
             class: "collapse-control",
-            transform: `translate(${NODE_WIDTH / 2 - 10} ${NODE_HEIGHT - 16})`,
+            transform: `translate(${nodeWidth / 2 - 10} ${NODE_HEIGHT - 16})`,
             role: "button",
             tabindex: "0",
             "aria-label": collapsed.has(node.id) ? "Expand subtree" : "Collapse subtree",
@@ -157,7 +157,8 @@ export function createGameTree(options) {
     const transformGroup = svgElement("g", { class: "flow-transform" });
     svg.append(transformGroup);
     viewport.append(svg);
-    const layout = buildLayout(options.tree.root, options.collapsed);
+    const nodeWidth = options.showPipeDream ? 254 : NODE_WIDTH;
+    const layout = buildLayout(options.tree.root, options.collapsed, nodeWidth);
     const selectedPath = pathToNode(options.tree, options.selectedNodeId);
     const highlightedIds = new Set(selectedPath.map(({ id }) => id));
     const highlightedEdges = new Set(selectedPath.slice(1).map((node) => `${node.parentId ?? ""}->${node.id}`));
@@ -183,7 +184,7 @@ export function createGameTree(options) {
         }
     }
     for (const node of layout.all) {
-        transformGroup.append(drawNode(options.tree, node, options.selectedNodeId, highlightedIds, options.collapsed, options.onSelect, options.onToggleCollapsed));
+        transformGroup.append(drawNode(options.tree, nodeWidth, options.showPipeDream, node, options.selectedNodeId, highlightedIds, options.collapsed, options.onSelect, options.onToggleCollapsed));
     }
     let current = { ...options.transform };
     const applyTransform = () => {

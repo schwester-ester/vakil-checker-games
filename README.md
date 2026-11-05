@@ -23,11 +23,13 @@ The sticky **Show checker move arrows (all boards)** toggle beside **Only white 
 
 **Show final white checkers** is on by default. Turn it off to hide the white checkers on the main diagonal of final game boards, while still showing any enabled initial outlines, move arrows, and critical-square labels. This applies to all final boards, including those in the three tableau panels.
 
+**Show pipe dream** places the corresponding numbered pipe dream immediately beside each final checkerboard, including the tableau panels, Final Results, terminal tree nodes, and the inspector. It is reflected horizontally and vertically in the same board frame, with upright tableau entries replacing crosses. The faint curves are elbow tiles. Hover a numbered square to see its tableau box and recording step; hover the diagram to see its Grassmannian permutation. The alphabet bound is the game’s number of white checkers, including padded empty tableau rows. This toggle starts off and works independently of all checker overlays.
+
 ## Start from a tableau
 
 Use **Start from a Young tableau** below the checker input. Enter weakly decreasing row lengths (for example `2, 1`), then fill the cells with positive integers. Rows must weakly increase and columns must strictly increase. These are straight semistandard tableaux in the same convention as Final Results, not skew tableaux.
 
-Click **Find checker game & siblings**. The final boards of all matching games appear in the input section, grouped by their minimal starting positions. All five board display toggles apply. Final Results groups every sibling game by its starting position and marks every game corresponding to your input. Each start has a **Trace the input tableau’s game** button; **Explore this starting position** opens its full flow tree. You can also click individual tableau entries to inspect their recording moves.
+Click **Find checker game & siblings**. The final boards of all matching games appear in the input section, grouped by their minimal starting positions. All six board display toggles apply. Final Results groups every sibling game by its starting position and marks every game corresponding to your input. Each start has a **Trace the input tableau’s game** button; **Explore this starting position** opens its full flow tree. You can also click individual tableau entries to inspect their recording moves.
 
 A tableau without the Schubert input partitions need not specify a unique starting position. The search exhausts the smallest matching board size `n` and returns every matching start, ordered by `k` and lexicographic `A`. Each start keeps its own full sibling tree; games from different starts are not merged even if their tableaux agree. Minimum boards can be smaller than the paper's examples. Blank row lengths represent the empty tableau, whose smallest positive board is `1 × 1`, with two possible starts: `k=0` and `k=1`.
 
@@ -41,7 +43,7 @@ Open **Tableau ladders & checker games** (or use **Compare tableau ladders** at 
 
 Use **+ Add another shape** and **Remove shape** to compare diagrams side by side with the same entry bound. Each diagram runs left to right from its root, scrolls independently, and has zoom, fit-width, and fit-height controls. Shape `(2,1)` with maximum entry `3`, for example, has eight tableaux. A column taller than the entry bound has no valid fillings; the empty shape has one empty tableau.
 
-Under each tableau, the app displays all checker games recording that filling on its minimum board, with their final checkerboards and initial subsets. All five board display toggles apply. Click a game to open its final position and trace its path. Click a tableau entry to inspect its actual recording move. If there are multiple games, select which game supplies the entry events. Final Results retains all minimal starting positions and their siblings for the selected tableau. Your comparison diagrams and scroll positions remain available while inspecting a game.
+Under each tableau, the app displays all checker games recording that filling on its minimum board, with their final checkerboards and initial subsets. All six board display toggles apply. Click a game to open its final position and trace its path. Click a tableau entry to inspect its actual recording move. If there are multiple games, select which game supplies the entry events. Final Results retains all minimal starting positions and their siblings for the selected tableau. Your comparison diagrams and scroll positions remain available while inspecting a game.
 
 Games populate progressively. **Cancel analysis** keeps completed searches; generating again reuses them and retries pending or failed searches. **Analysis limits** controls tableaux per shape (default 200), maximum searched board (default 10), and generated states per tableau (default 500,000). The individual game-tree limit comes from the filled-tableau section. A diagram exceeding its tableau limit is rejected rather than truncated. A checker search that hits a limit is labeled on that tableau; other tableaux still complete, and no incomplete search is presented as a minimum-board result.
 
@@ -53,7 +55,7 @@ Open **Equivalent tableaux**, enter row lengths and an entry bound `k`, then cli
 
 Enable **Only rows with multiple equivalent tableaux** to hide starts with just one distinct tableau. The toggle filters the existing results immediately without repeating the search; multiple games for the same tableau count as one tableau.
 
-Each tableau is displayed beside its own game's final board. All five sticky board display toggles apply here, in the filled-tableau and ladder panels, in move inspection, and in Final Results.
+Each tableau is displayed beside its own game's final board. All six sticky board display toggles apply here, in the filled-tableau and ladder panels, in move inspection, and in Final Results.
 
 For every filling, the search establishes its own smallest possible board using exactly `k` checkers, then groups fillings that share the same minimal starting position `(n,A,B)`. Rows can have different board sizes, and each board is minimal for every tableau listed in its row. All starts on each tableau's smallest board are retained. Copies occurring on larger boards do not enter the equivalence table.
 
